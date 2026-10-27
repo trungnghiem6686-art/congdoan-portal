@@ -277,6 +277,11 @@ public sealed partial class LegacyImporter
             run.Report.Issues.Add(new ImportIssue(key, "image", $"Ảnh {src} bị lỗi, đã bỏ qua: {e.Message}"));
             return null;
         }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            run.Report.Issues.Add(new ImportIssue(key, "image", $"Không đọc được tệp ảnh {src}, đã bỏ qua ({e.GetType().Name})."));
+            return null;
+        }
     }
 
     /// <summary>Local path inside the export folder, or null (reported) for remote or escaping references.</summary>

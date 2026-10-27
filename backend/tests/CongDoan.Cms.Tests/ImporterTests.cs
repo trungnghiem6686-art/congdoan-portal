@@ -143,4 +143,27 @@ public class ImporterTests : IClassFixture<ApiFactory>, IDisposable
         Assert.Contains(lines, l => l.StartsWith("failed,1"));
         Assert.Contains(lines, l => l.Contains("p2") && l.Contains("hong.jpg"));
     }
+
+    [Fact]
+    public async Task Unreadable_Image_File_Is_Reported_Not_Fatal()
+    {
+        // A file that exists but fails on read (locked, damaged disk...). /proc/self/mem opens fine and throws EIO on read.
+        if (!OperatingSystem.IsLinux()) return;
+        File.CreateSymbolicLink(Path.Combine(_dir, "images", "khong-doc-duoc.png"), "/proc/self/mem");
+        var manifest = new
+        {
+            posts = new[]
+            {
+                new { key = "r1", title = $"Bài MẪU ảnh lỗi đọc {_tag}", bodyHtml = "<p>MẪU</p><img src=\"images/khong-doc-duoc.png\">", publishedUtc = "2020-01-01T00:00:00Z" },
+                new { key = "r2", title = $"Bài MẪU sau đó {_tag}", bodyHtml = "<p>MẪU</p>", publishedUtc = "2020-01-02T00:00:00Z" },
+            },
+        };
+        File.WriteAllText(Path.Combine(_dir, "manifest.json"), JsonSerializer.Serialize(manifest));
+
+        var report = await RunAsync();
+
+        Assert.Equal(2, report.Created);
+        Assert.Equal(0, report.Failed);
+        Assert.Contains(report.Issues, i => i.SourceKey == "r1" && i.Kind == "image" && i.Message.Contains("khong-doc-duoc.png"));
+    }
 }
