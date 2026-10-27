@@ -58,6 +58,11 @@ public static class DependencyInjection
         services.AddScoped<SettingsService>();
         services.AddScoped<PublicSiteService>();
         services.AddScoped<CmsSeeder>();
+        services.AddHttpClient<ICacheInvalidator, HttpCacheInvalidator>();
+        services.AddScoped<SectionCatalog>();
+        services.AddScoped<LayoutService>();
+        services.AddScoped<SectionResolver>();
+        services.TryAddScoped<IExamNoticeProvider, NoExamNotices>();
         services.AddScoped<PostService>();
         services.AddScoped<CategoryService>();
         services.AddScoped<PublicPostService>();

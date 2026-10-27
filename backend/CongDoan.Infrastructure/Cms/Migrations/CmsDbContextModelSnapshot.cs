@@ -334,6 +334,66 @@ namespace CongDoan.Infrastructure.Cms.Migrations
                     b.ToTable("Documents", "cms");
                 });
 
+            modelBuilder.Entity("CongDoan.Domain.Cms.LayoutRevision", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<Guid?>("PublishedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("PublishedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<string>("SectionsJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Target")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("UpdatedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Target")
+                        .IsUnique()
+                        .HasDatabaseName("UX_Layout_OnePublished")
+                        .HasFilter("[Status] = 1");
+
+                    b.HasIndex("Target", "Version")
+                        .IsUnique()
+                        .HasFilter("[Version] > 0");
+
+                    b.ToTable("LayoutRevisions", "cms");
+                });
+
             modelBuilder.Entity("CongDoan.Domain.Cms.MediaAsset", b =>
                 {
                     b.Property<Guid>("Id")

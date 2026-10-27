@@ -9,6 +9,11 @@ public partial interface ICmsDbContext
     DbSet<Category> Categories { get; }
     DbSet<Tag> Tags { get; }
 
+    DbSet<LayoutRevision> LayoutRevisions { get; }
+
+    /// <summary>Runs work in one database transaction (retry-safe).</summary>
+    Task InTransactionAsync(Func<Task> work, CancellationToken ct = default);
+
     /// <summary>Optimistic concurrency: compare against the version the client last saw.</summary>
     void ExpectRowVersion(object entity, byte[] rowVersion);
 }

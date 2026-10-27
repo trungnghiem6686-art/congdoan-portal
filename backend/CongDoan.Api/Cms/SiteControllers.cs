@@ -169,8 +169,4 @@ public sealed class PublicSiteController : ApiControllerBase
     [HttpGet("site")] public async Task<IActionResult> Site(CancellationToken ct) => Envelope(await _settings.PublicAsync(ct));
     [HttpGet("banners")] public async Task<IActionResult> Banners([FromQuery] string? position, CancellationToken ct) => Envelope(await _banners.LiveAsync(position, ct));
     [HttpGet("resolve")] public async Task<IActionResult> Resolve([FromQuery] string path, CancellationToken ct) => Envelope(await _site.ResolveAsync(path, ct));
-
-    [HttpGet("pages/{slug}")]
-    public async Task<IActionResult> Page(string slug, CancellationToken ct) =>
-        await _site.PageAsync(slug, ct) is { } p ? Envelope(p) : NotFoundEnvelope();
 }
