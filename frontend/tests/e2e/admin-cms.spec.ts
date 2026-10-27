@@ -238,3 +238,24 @@ test('rollback_restores', async ({ page, context }) => {
   await pub.reload()
   await expect(pub.getByText(marker)).toHaveCount(0)
 })
+
+test('manage_redirects_from_admin', async ({ page, request }) => {
+  const post = await admin.publishedPost(unique('Bài chuyển hướng'))
+  const old = `/trang-cu-${Math.random().toString(36).slice(2, 8)}/bai.html`
+  await loginAdminUi(page)
+  await page.goto('/admin/chuyen-huong')
+  await page.getByRole('button', { name: 'Thêm chuyển hướng' }).click()
+  await page.getByLabel('Đường dẫn cũ').fill(old)
+  await page.getByLabel('Đường dẫn mới').fill(`/tin-tuc/${post.slug}`)
+  await page.getByRole('button', { name: 'Lưu' }).click()
+  await expect(page.getByRole('cell', { name: old })).toBeVisible()
+
+  const moved = await request.get(old, { maxRedirects: 0 })
+  expect([301, 308]).toContain(moved.status())
+  expect(moved.headers()['location']).toContain(`/tin-tuc/${post.slug}`)
+
+  page.once('dialog', (d) => d.accept())
+  await page.getByRole('row', { name: new RegExp(old.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&')) }).getByRole('button', { name: 'Xóa' }).click()
+  await expect(page.getByRole('cell', { name: old })).toHaveCount(0)
+  expect((await request.get(old, { maxRedirects: 0 })).status()).toBe(404)
+})

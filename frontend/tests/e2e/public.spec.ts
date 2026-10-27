@@ -103,3 +103,20 @@ test('renamed_menu_url_redirects_permanently', async ({ page, request }) => {
   await page.goto(`/${item.slug}`)
   await expect(page.getByRole('heading', { level: 1 })).toHaveText(label + ' mới')
 })
+
+test('sitemap_robots_and_canonical', async ({ page, request }) => {
+  const post = await admin.publishedPost(unique('Bài sitemap'))
+  const sitemap = await request.get('/sitemap.xml')
+  expect(sitemap.status()).toBe(200)
+  const xml = await sitemap.text()
+  expect(xml).toContain(`/tin-tuc/${post.slug}</loc>`)
+  expect(xml).not.toContain('/admin')
+
+  const robots = await (await request.get('/robots.txt')).text()
+  expect(robots).toMatch(/Disallow: \/admin/)
+  expect(robots).toMatch(/Disallow: \/thi/)
+  expect(robots).toMatch(/Sitemap: .*\/sitemap\.xml/)
+
+  await page.goto(`/tin-tuc/${post.slug}`)
+  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', new RegExp(`/tin-tuc/${post.slug}$`))
+})

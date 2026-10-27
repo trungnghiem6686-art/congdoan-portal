@@ -13,7 +13,14 @@ type Props = { params: Promise<{ slug: string }> }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const post = await getPost((await params).slug)
-  return post ? { title: post.title, description: post.summary ?? undefined, openGraph: { title: post.title, images: post.coverUrl ? [post.coverUrl] : [] } } : {}
+  return post
+    ? {
+        title: post.title,
+        description: post.summary ?? undefined,
+        alternates: { canonical: `/tin-tuc/${post.slug}` },
+        openGraph: { title: post.title, images: post.coverUrl ? [post.coverUrl] : [] },
+      }
+    : {}
 }
 
 export default async function ArticlePage({ params }: Props) {

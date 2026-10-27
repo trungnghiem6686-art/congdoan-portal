@@ -8,7 +8,7 @@ type Props = { params: Promise<{ slug: string }>; searchParams: Promise<Record<s
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
   const cat = (await getCategories()).find((c) => c.slug === slug)
-  return cat ? { title: cat.name, description: cat.description ?? undefined } : {}
+  return cat ? { title: cat.name, description: cat.description ?? undefined, alternates: { canonical: `/chuyen-muc/${cat.slug}` } } : {}
 }
 
 export default async function CategoryPage({ params, searchParams }: Props) {

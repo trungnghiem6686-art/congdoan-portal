@@ -168,5 +168,6 @@ public sealed class PublicSiteController : ApiControllerBase
     [HttpGet("menus")] public async Task<IActionResult> Menus(CancellationToken ct) => Envelope(await _site.MenusAsync(ct));
     [HttpGet("site")] public async Task<IActionResult> Site(CancellationToken ct) => Envelope(await _settings.PublicAsync(ct));
     [HttpGet("banners")] public async Task<IActionResult> Banners([FromQuery] string? position, CancellationToken ct) => Envelope(await _banners.LiveAsync(position, ct));
+    [HttpGet("sitemap")] public async Task<IActionResult> Sitemap(CancellationToken ct) => Envelope(await _site.SitemapAsync(ct));
     [HttpGet("resolve")] public async Task<IActionResult> Resolve([FromQuery] string path, CancellationToken ct) => Envelope(await _site.ResolveAsync(path, ct));
 }

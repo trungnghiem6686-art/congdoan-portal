@@ -19,6 +19,7 @@ export const NAV: NavGroup[] = [
       { href: '/admin/trang-chu', label: 'Trang chủ', perm: 'cms.homepage.manage' },
       { href: '/admin/trang', label: 'Trang tĩnh', perm: 'cms.page.manage' },
       { href: '/admin/menu', label: 'Menu', perm: 'cms.menu.manage' },
+      { href: '/admin/chuyen-huong', label: 'Chuyển hướng', perm: 'cms.menu.manage' },
       { href: '/admin/banner', label: 'Banner', perm: 'cms.banner.manage' },
       { href: '/admin/van-ban', label: 'Văn bản', perm: 'cms.document.manage' },
       { href: '/admin/thu-vien', label: 'Thư viện ảnh/video', perm: 'cms.album.manage' },

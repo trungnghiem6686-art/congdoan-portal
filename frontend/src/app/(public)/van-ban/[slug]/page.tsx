@@ -9,7 +9,7 @@ type Props = { params: Promise<{ slug: string }> }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const d = await getDocument((await params).slug)
-  return d ? { title: `${d.number} – ${d.title}` } : {}
+  return d ? { title: `${d.number} – ${d.title}`, alternates: { canonical: `/van-ban/${d.slug}` } } : {}
 }
 
 export default async function DocumentPage({ params }: Props) {

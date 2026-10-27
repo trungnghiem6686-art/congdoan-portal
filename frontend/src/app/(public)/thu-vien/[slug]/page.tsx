@@ -7,7 +7,7 @@ type Props = { params: Promise<{ slug: string }> }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const a = await getAlbum((await params).slug)
-  return a ? { title: a.title } : {}
+  return a ? { title: a.title, alternates: { canonical: `/thu-vien/${a.slug}` } } : {}
 }
 
 const EMBED_HOSTS = ['www.youtube.com', 'youtube.com', 'www.youtube-nocookie.com', 'player.vimeo.com', 'www.facebook.com']

@@ -13,6 +13,8 @@ public sealed record ResolvedTarget(string Type, string? Slug, string? Url);
 public sealed record Resolved(string Type, int Status, string? Location, string? Slug, string? Title, ResolvedTarget? Target,
     IReadOnlyList<PublicMenuItem>? Children);
 
+public sealed record SitemapEntry(string Path, DateTime? LastModifiedUtc);
+
 /// <summary>Public navigation and URL resolution (menus, redirects, page lookup).</summary>
 public sealed class PublicSiteService
 {
@@ -33,6 +35,23 @@ public sealed class PublicSiteService
         var items = await _db.MenuItems.AsNoTracking().Where(i => i.IsVisible && !i.IsDeleted).ToListAsync(ct);
         var targets = await TargetSlugsAsync(items, ct);
         return menus.Select(m => new PublicMenu(m.Code, m.Name, Build(items.Where(i => i.MenuId == m.Id).ToList(), null, targets))).ToList();
+    }
+
+    /// <summary>Every publicly visible content URL (canonical paths only; menu aliases are left out).</summary>
+    public async Task<IReadOnlyList<SitemapEntry>> SitemapAsync(CancellationToken ct = default)
+    {
+        var entries = new List<SitemapEntry>();
+        entries.AddRange((await _posts.Visible().Select(p => new { p.Slug, p.UpdatedUtc }).ToListAsync(ct))
+            .Select(p => new SitemapEntry(PublicPaths.For("post", p.Slug), p.UpdatedUtc)));
+        entries.AddRange((await _db.Categories.AsNoTracking().Where(c => c.IsVisible && !c.IsDeleted).Select(c => c.Slug).ToListAsync(ct))
+            .Select(slug => new SitemapEntry(PublicPaths.For("category", slug), null)));
+        entries.AddRange((await _db.Pages.AsNoTracking().Where(x => x.IsVisible && !x.IsDeleted).Select(x => new { x.Slug, x.UpdatedUtc }).ToListAsync(ct))
+            .Select(x => new SitemapEntry(PublicPaths.For("page", x.Slug), x.UpdatedUtc)));
+        entries.AddRange((await _db.Documents.AsNoTracking().Where(x => x.IsVisible && !x.IsDeleted).Select(x => new { x.Slug, x.UpdatedUtc }).ToListAsync(ct))
+            .Select(x => new SitemapEntry(PublicPaths.For("document", x.Slug), x.UpdatedUtc)));
+        entries.AddRange((await _db.Albums.AsNoTracking().Where(x => x.IsVisible && !x.IsDeleted).Select(x => new { x.Slug, x.UpdatedUtc }).ToListAsync(ct))
+            .Select(x => new SitemapEntry(PublicPaths.For("album", x.Slug), x.UpdatedUtc)));
+        return entries;
     }
 
     public async Task<PageDto?> PageAsync(string slug, CancellationToken ct = default)

@@ -50,6 +50,31 @@ public class AuthTests : IClassFixture<ApiFactory>
     }
 
     [Fact]
+    public async Task Behind_Https_Proxy_Session_Cookie_Is_Secure()
+    {
+        // IIS terminates TLS and forwards plain HTTP to Kestrel on localhost with X-Forwarded-Proto.
+        // Cookies are passed by hand: a cookie container would not send Secure cookies back over http://.
+        await _f.AdminAsync("proxy-user");
+        using var http = _f.CreateClient(new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions { HandleCookies = false });
+        http.DefaultRequestHeaders.Add("X-Forwarded-Proto", "https");
+
+        var csrf = await http.GetAsync("/api/antiforgery");
+        var cookies = string.Join("; ", csrf.Headers.GetValues("Set-Cookie").Select(h => h.Split(';')[0]));
+        using var doc = System.Text.Json.JsonDocument.Parse(await csrf.Content.ReadAsStringAsync());
+        var login = new HttpRequestMessage(HttpMethod.Post, "/api/admin/auth/login")
+        {
+            Content = System.Net.Http.Json.JsonContent.Create(new { userName = "proxy-user", password = Seed.Password }),
+        };
+        login.Headers.Add("Cookie", cookies);
+        login.Headers.Add("X-XSRF-TOKEN", doc.RootElement.GetProperty("data").GetProperty("token").GetString());
+        var ok = await http.SendAsync(login);
+
+        Assert.Equal(HttpStatusCode.OK, ok.StatusCode);
+        var session = ok.Headers.GetValues("Set-Cookie").Single(h => h.StartsWith("cd_admin="));
+        Assert.Contains("secure", session, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task Wrong_Password_And_Unknown_User_Return_Same_Error()
     {
         await _f.AdminAsync("known-user");

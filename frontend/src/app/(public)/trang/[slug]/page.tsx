@@ -9,7 +9,7 @@ type Props = { params: Promise<{ slug: string }> }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const p = await getPage((await params).slug)
-  return p ? { title: p.title, description: p.seoDescription ?? undefined } : {}
+  return p ? { title: p.title, description: p.seoDescription ?? undefined, alternates: { canonical: `/trang/${p.slug}` } } : {}
 }
 
 export default async function StaticPage({ params }: Props) {

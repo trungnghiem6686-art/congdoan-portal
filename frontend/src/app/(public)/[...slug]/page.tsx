@@ -10,8 +10,9 @@ type Props = { params: Promise<{ slug: string[] }>; searchParams: Promise<Record
 
 /** Menu item paths ("/{slug}") and old URLs (permanent redirects) resolved by the backend. */
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const r = await resolvePath('/' + (await params).slug.join('/'))
-  return r.type === 'menu' && r.title ? { title: r.title } : {}
+  const path = '/' + (await params).slug.join('/')
+  const r = await resolvePath(path)
+  return r.type === 'menu' && r.title ? { title: r.title, alternates: { canonical: path } } : {}
 }
 
 export default async function ResolvedPage({ params, searchParams }: Props) {

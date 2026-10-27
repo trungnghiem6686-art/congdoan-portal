@@ -28,6 +28,9 @@ export const listPosts = (q: { category?: string; tag?: string; page?: number; p
   return api<Paged<PostSummary>>(`/api/public/posts?${s}`, { tags: ['posts'] })
 }
 
+export type SitemapEntry = { path: string; lastModifiedUtc: string | null }
+export const getSitemap = () => api<SitemapEntry[]>('/api/public/sitemap', { tags: ['posts', 'pages', 'documents', 'albums'] })
+
 export const menu = (menus: Menu[], code: string) => menus.find((m) => m.code === code)?.items ?? []
 
 export type PublicCategory = { id: string; name: string; slug: string; description?: string | null; parentId?: string | null }
