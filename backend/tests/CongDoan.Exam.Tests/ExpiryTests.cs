@@ -37,6 +37,17 @@ public class ExpiryTests : IClassFixture<ApiFactory>
     }
 
     [Fact]
+    public async Task Timestamps_Read_From_Database_Are_Serialized_As_Utc()
+    {
+        // SQL Server datetime2 comes back as DateTimeKind.Unspecified; without an explicit "Z"
+        // a browser in UTC+7 parses the deadline as local time and sees the exam as already over.
+        using var a = await AttemptFlow.StartAsync(_f);
+        var view = await TestClient.DataAsync(await a.Candidate.GetAsync($"/api/thi/attempts/{a.AttemptId}"));
+        Assert.EndsWith("Z", view.GetProperty("deadlineUtc").GetString());
+        Assert.EndsWith("Z", view.GetProperty("startedUtc").GetString());
+    }
+
+    [Fact]
     public async Task Worker_Restart_Mid_Exam_Does_Not_Extend_Deadline()
     {
         using var a = await AttemptFlow.StartAsync(_f, exam: new { durationMinutes = 20 });
