@@ -87,6 +87,9 @@ public static class DependencyInjection
         services.AddScoped<IAttemptFinisher>(sp => sp.GetRequiredService<AttemptRunner>());
         services.AddScoped<AttemptService>();
         services.AddScoped<ExpirySweeper>();
+        services.AddSingleton<ISpreadsheetWriter, CongDoan.Infrastructure.Shared.XlsxWriter>();
+        services.AddScoped<ResultService>();
+        services.AddScoped<ReportService>();
         if (config.GetValue("Workers:Enabled", true)) services.AddHostedService<ExpiryWorker>();
         return services;
     }
