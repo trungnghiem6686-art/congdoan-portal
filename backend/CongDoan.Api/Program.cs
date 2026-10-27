@@ -23,6 +23,14 @@ if (app.Configuration.GetValue("Database:MigrateOnStartup", false))
 await MigrationRunner.SeedAsync(app.Services, app.Configuration);
 
 app.UseMiddleware<RequestIdMiddleware>();
+app.Use(async (ctx, next) =>
+{
+    var h = ctx.Response.Headers;
+    h.XContentTypeOptions = "nosniff";
+    h["Referrer-Policy"] = "strict-origin-when-cross-origin";
+    h.XFrameOptions = "SAMEORIGIN";
+    await next();
+});
 app.UseMiddleware<ExceptionMiddleware>();
 app.UseAntiforgeryForApi();
 app.UseRateLimiter();

@@ -1,6 +1,8 @@
 using CongDoan.Application.Identity;
 using CongDoan.Application.Shared;
+using CongDoan.Application.Cms;
 using CongDoan.Infrastructure.Audit;
+using CongDoan.Infrastructure.Cms;
 using CongDoan.Infrastructure.Identity;
 using CongDoan.Infrastructure.Shared;
 using Microsoft.EntityFrameworkCore;
@@ -36,6 +38,14 @@ public static class DependencyInjection
         services.AddScoped<CandidateGroupService>();
         services.AddScoped<RoleService>();
         services.AddScoped<IdentitySeeder>();
+
+        services.Configure<MediaOptions>(config.GetSection("Media"));
+        services.AddModuleDbContext<CmsDbContext>(conn, CmsDbContext.Schema);
+        services.AddScoped<ICmsDbContext>(sp => sp.GetRequiredService<CmsDbContext>());
+        services.AddSingleton<IFileStore, LocalFileStore>();
+        services.AddSingleton<IImageProcessor, SkiaImageProcessor>();
+        services.AddScoped<MediaService>();
+        services.AddScoped<IMediaUsageTracker>(sp => sp.GetRequiredService<MediaService>());
         return services;
     }
 
