@@ -4,18 +4,20 @@ import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { api } from '@/lib/api'
 import { BlockRenderer, type Block } from '@/components/blocks/BlockRenderer'
+import { previewApiUrl } from '@/components/admin/previewSource'
 
 /** Draft preview rendered inside the builder's iframe. Admin-only API, never cached, never public. */
 function Preview() {
-  const source = useSearchParams().get('nguon') ?? 'homepage'
+  const url = previewApiUrl(useSearchParams().get('nguon'))
   const [blocks, setBlocks] = useState<Block[] | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    const url = source.startsWith('page:') ? `/api/admin/pages/${source.slice(5)}/layout/preview` : '/api/admin/homepage/preview'
+    if (!url) return
     api<{ sections: Block[] }>(url, { cache: 'no-store' }).then((r) => setBlocks(r.sections)).catch((e) => setError(e.message))
-  }, [source])
+  }, [url])
 
+  if (!url) return <p className="p-4 text-brand-red">Đường dẫn xem trước không hợp lệ.</p>
   if (error) return <p className="p-4 text-brand-red">{error}</p>
   if (!blocks) return <p className="p-4">Đang tải bản xem trước…</p>
   return (
