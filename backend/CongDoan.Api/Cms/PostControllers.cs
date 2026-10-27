@@ -82,7 +82,7 @@ public sealed class PublicPostsController : ApiControllerBase
     public PublicPostsController(PublicPostService svc) => _svc = svc;
 
     [HttpGet]
-    public async Task<IActionResult> List([FromQuery] PublicPostQuery q, CancellationToken ct) => Envelope(await _svc.ListAsync(q, ct));
+    public async Task<IActionResult> List([FromQuery] PublicPostQuery query, CancellationToken ct) => Envelope(await _svc.ListAsync(query, ct));
 
     [HttpGet("{slug}")]
     public async Task<IActionResult> Get(string slug, CancellationToken ct)

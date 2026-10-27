@@ -19,6 +19,7 @@ public static class AuthSchemes
     public const string SessionClaim = "cd:sid";
     public const string MustChangeClaim = "cd:mcp";
     public const string LoginRateLimit = "login";
+    public const string ContactRateLimit = "contact";
 
     public static string For(AccountKind kind) => kind == AccountKind.Admin ? Admin : Candidate;
 
@@ -73,11 +74,15 @@ public static class AuthSetup
         });
 
         var loginPermit = config.GetValue("RateLimit:LoginPermitPerMinute", 10);
+        var contactPermit = config.GetValue("RateLimit:ContactPermitPerMinute", 5);
         services.AddRateLimiter(o =>
         {
             o.AddPolicy(AuthSchemes.LoginRateLimit, ctx => RateLimitPartition.GetFixedWindowLimiter(
                 ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown",
                 _ => new FixedWindowRateLimiterOptions { PermitLimit = loginPermit, Window = TimeSpan.FromMinutes(1) }));
+            o.AddPolicy(AuthSchemes.ContactRateLimit, ctx => RateLimitPartition.GetFixedWindowLimiter(
+                ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                _ => new FixedWindowRateLimiterOptions { PermitLimit = contactPermit, Window = TimeSpan.FromMinutes(1) }));
             o.OnRejected = async (ctx, _) => await ErrorWriter.WriteAsync(ctx.HttpContext, StatusCodes.Status429TooManyRequests,
                 "rate_limited", "Bạn thao tác quá nhanh. Vui lòng thử lại sau ít phút.");
         });

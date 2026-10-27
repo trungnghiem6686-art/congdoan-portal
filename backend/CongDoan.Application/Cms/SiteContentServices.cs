@@ -338,6 +338,7 @@ public sealed class AlbumService
         a.Description = cmd.Description?.Trim();
         a.CoverMediaId = cmd.CoverMediaId;
         a.EventDate = cmd.EventDate;
+        a.SearchText = Slug.SearchText($"{a.Title} {a.Description}");
         a.SortOrder = cmd.SortOrder;
         a.IsVisible = cmd.IsVisible;
     }

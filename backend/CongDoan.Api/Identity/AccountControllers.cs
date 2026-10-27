@@ -18,8 +18,8 @@ public sealed class AdminUsersController : ApiControllerBase
     public AdminUsersController(AdminUserService svc) => _svc = svc;
 
     [HttpGet]
-    public async Task<IActionResult> List([FromQuery] PageQuery q, [FromQuery] bool deleted, CancellationToken ct) =>
-        Envelope(await _svc.ListAsync(q, deleted, ct));
+    public async Task<IActionResult> List([FromQuery] PageQuery query, [FromQuery] bool deleted, CancellationToken ct) =>
+        Envelope(await _svc.ListAsync(query, deleted, ct));
 
     [HttpGet("{id:guid}")]
     public async Task<IActionResult> Get(Guid id, CancellationToken ct) => Envelope(await _svc.GetAsync(id, ct));
@@ -152,8 +152,8 @@ public sealed class CandidatesController : ApiControllerBase
 
     [HttpGet]
     [RequirePermission(Permissions.CandidateView)]
-    public async Task<IActionResult> List([FromQuery] PageQuery q, [FromQuery] Guid? orgUnitId, [FromQuery] Guid? groupId, [FromQuery] bool deleted, CancellationToken ct) =>
-        Envelope(await _svc.ListAsync(q, orgUnitId, groupId, deleted, ct));
+    public async Task<IActionResult> List([FromQuery] PageQuery query, [FromQuery] Guid? orgUnitId, [FromQuery] Guid? groupId, [FromQuery] bool deleted, CancellationToken ct) =>
+        Envelope(await _svc.ListAsync(query, orgUnitId, groupId, deleted, ct));
 
     [HttpGet("{id:guid}")]
     [RequirePermission(Permissions.CandidateView)]

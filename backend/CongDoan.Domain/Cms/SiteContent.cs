@@ -97,6 +97,7 @@ public sealed class Album : CmsItem
     public string? Description { get; set; }
     public Guid? CoverMediaId { get; set; }
     public DateTime? EventDate { get; set; }
+    public string SearchText { get; set; } = "";
 }
 
 public sealed class AlbumItem
@@ -166,4 +167,41 @@ public sealed class Redirect
     public int StatusCode { get; private set; } = 301;
     public DateTime CreatedUtc { get; private set; }
     public int Hits { get; set; }
+}
+
+public enum ContactStatus
+{
+    New = 0,
+    Handled = 1,
+    Spam = 2,
+}
+
+public sealed class ContactRequest
+{
+    private ContactRequest() { }
+
+    public ContactRequest(string name, string email, string? phone, string? subject, string message, string? ipAddress, DateTime createdUtc)
+    {
+        Id = Guid.NewGuid();
+        Name = name;
+        Email = email;
+        Phone = phone;
+        Subject = subject;
+        Message = message;
+        IpAddress = ipAddress;
+        CreatedUtc = createdUtc;
+    }
+
+    public Guid Id { get; private set; }
+    public string Name { get; private set; } = "";
+    public string Email { get; private set; } = "";
+    public string? Phone { get; private set; }
+    public string? Subject { get; private set; }
+    public string Message { get; private set; } = "";
+    public string? IpAddress { get; private set; }
+    public DateTime CreatedUtc { get; private set; }
+    public ContactStatus Status { get; set; }
+    public string? HandlerNote { get; set; }
+    public Guid? HandledBy { get; set; }
+    public DateTime? HandledUtc { get; set; }
 }

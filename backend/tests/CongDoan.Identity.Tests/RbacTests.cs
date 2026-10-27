@@ -93,6 +93,20 @@ public class RbacTests : IClassFixture<RbacFactory>
     }
 
     [Fact]
+    public async Task Admin_List_Search_Filters_By_Q()
+    {
+        await _f.AdminAsync("sys-q", false, Roles.SystemAdmin);
+        using var admin = await _f.LoginAdminAsync("sys-q");
+        var tag = Guid.NewGuid().ToString("N")[..6];
+        await _f.CandidateAsync($"q-{tag}-one");
+        await _f.CandidateAsync($"other-{Guid.NewGuid():N}"[..20]);
+
+        var list = await TestClient.DataAsync(await admin.GetAsync($"/api/admin/candidates?q={tag}&pageSize=5"));
+        Assert.Equal(1, list.GetProperty("total").GetInt32());
+        Assert.Equal(5, list.GetProperty("pageSize").GetInt32());
+    }
+
+    [Fact]
     public async Task Locking_User_Revokes_Their_Sessions()
     {
         await _f.AdminAsync("sys-lock", false, Roles.SystemAdmin);

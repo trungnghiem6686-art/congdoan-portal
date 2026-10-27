@@ -15,6 +15,7 @@ public sealed partial class CmsDbContext
     public DbSet<Page> Pages => Set<Page>();
     public DbSet<SiteSetting> SiteSettings => Set<SiteSetting>();
     public DbSet<Redirect> Redirects => Set<Redirect>();
+    public DbSet<ContactRequest> ContactRequests => Set<ContactRequest>();
 
     private static void Item<T>(EntityTypeBuilder<T> e, string table) where T : CmsItem
     {
@@ -111,6 +112,19 @@ public sealed partial class CmsDbContext
             e.Property(x => x.OldPath).HasMaxLength(500).IsRequired();
             e.HasIndex(x => x.OldPath).IsUnique();
             e.Property(x => x.NewPath).HasMaxLength(500).IsRequired();
+        });
+        b.Entity<ContactRequest>(e =>
+        {
+            e.ToTable("ContactRequests");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Name).HasMaxLength(200).IsRequired();
+            e.Property(x => x.Email).HasMaxLength(200).IsRequired();
+            e.Property(x => x.Phone).HasMaxLength(30);
+            e.Property(x => x.Subject).HasMaxLength(300);
+            e.Property(x => x.Message).HasMaxLength(5000).IsRequired();
+            e.Property(x => x.IpAddress).HasMaxLength(64);
+            e.Property(x => x.HandlerNote).HasMaxLength(2000);
+            e.HasIndex(x => new { x.Status, x.CreatedUtc });
         });
         ConfigureHomepage(b);
     }

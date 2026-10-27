@@ -15,6 +15,7 @@ public partial interface ICmsDbContext
     DbSet<Page> Pages { get; }
     DbSet<SiteSetting> SiteSettings { get; }
     DbSet<Redirect> Redirects { get; }
+    DbSet<ContactRequest> ContactRequests { get; }
 }
 
 /// <summary>Hide/show, trash/restore shared by every CMS item type.</summary>

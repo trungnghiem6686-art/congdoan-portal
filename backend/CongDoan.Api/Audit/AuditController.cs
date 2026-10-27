@@ -15,5 +15,5 @@ public sealed class AuditController : ApiControllerBase
     public AuditController(AuditQueryService svc) => _svc = svc;
 
     [HttpGet]
-    public async Task<IActionResult> List([FromQuery] AuditQuery q, CancellationToken ct) => Envelope(await _svc.ListAsync(q, ct));
+    public async Task<IActionResult> List([FromQuery] AuditQuery query, CancellationToken ct) => Envelope(await _svc.ListAsync(query, ct));
 }

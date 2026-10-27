@@ -54,7 +54,7 @@ public sealed class AdminBannersController : ApiControllerBase
     private readonly BannerService _svc;
     public AdminBannersController(BannerService svc) => _svc = svc;
 
-    [HttpGet] public async Task<IActionResult> List([FromQuery] ItemQuery q, [FromQuery] string? position, CancellationToken ct) => Envelope(await _svc.ListAsync(q, position, ct));
+    [HttpGet] public async Task<IActionResult> List([FromQuery] ItemQuery query, [FromQuery] string? position, CancellationToken ct) => Envelope(await _svc.ListAsync(query, position, ct));
     [HttpGet("{id:guid}")] public async Task<IActionResult> Get(Guid id, CancellationToken ct) => Envelope(await _svc.GetAsync(id, ct));
     [HttpPost] public async Task<IActionResult> Create([FromBody] SaveBanner cmd, CancellationToken ct) => Created(await _svc.CreateAsync(cmd, ct));
     [HttpPut("{id:guid}")] public async Task<IActionResult> Update(Guid id, [FromBody] SaveBanner cmd, CancellationToken ct) => Envelope(await _svc.UpdateAsync(id, cmd, ct));
@@ -71,7 +71,7 @@ public sealed class AdminDocumentsController : ApiControllerBase
     private readonly DocumentService _svc;
     public AdminDocumentsController(DocumentService svc) => _svc = svc;
 
-    [HttpGet] public async Task<IActionResult> List([FromQuery] ItemQuery q, CancellationToken ct) => Envelope(await _svc.ListAsync(q, ct));
+    [HttpGet] public async Task<IActionResult> List([FromQuery] ItemQuery query, CancellationToken ct) => Envelope(await _svc.ListAsync(query, ct));
     [HttpGet("{id:guid}")] public async Task<IActionResult> Get(Guid id, CancellationToken ct) => Envelope(await _svc.GetAsync(id, ct));
     [HttpPost] public async Task<IActionResult> Create([FromBody] SaveDocument cmd, CancellationToken ct) => Created(await _svc.CreateAsync(cmd, ct));
     [HttpPut("{id:guid}")] public async Task<IActionResult> Update(Guid id, [FromBody] SaveDocument cmd, CancellationToken ct) => Envelope(await _svc.UpdateAsync(id, cmd, ct));
@@ -90,7 +90,7 @@ public sealed class AdminAlbumsController : ApiControllerBase
     private readonly AlbumService _svc;
     public AdminAlbumsController(AlbumService svc) => _svc = svc;
 
-    [HttpGet] public async Task<IActionResult> List([FromQuery] ItemQuery q, CancellationToken ct) => Envelope(await _svc.ListAsync(q, ct));
+    [HttpGet] public async Task<IActionResult> List([FromQuery] ItemQuery query, CancellationToken ct) => Envelope(await _svc.ListAsync(query, ct));
     [HttpGet("{id:guid}")] public async Task<IActionResult> Get(Guid id, CancellationToken ct) => Envelope(await _svc.GetAsync(id, ct));
     [HttpPost] public async Task<IActionResult> Create([FromBody] SaveAlbum cmd, CancellationToken ct) => Created(await _svc.CreateAsync(cmd, ct));
     [HttpPut("{id:guid}")] public async Task<IActionResult> Update(Guid id, [FromBody] SaveAlbum cmd, CancellationToken ct) => Envelope(await _svc.UpdateAsync(id, cmd, ct));
@@ -110,7 +110,7 @@ public sealed class AdminPagesController : ApiControllerBase
     private readonly PageService _svc;
     public AdminPagesController(PageService svc) => _svc = svc;
 
-    [HttpGet] public async Task<IActionResult> List([FromQuery] ItemQuery q, CancellationToken ct) => Envelope(await _svc.ListAsync(q, ct));
+    [HttpGet] public async Task<IActionResult> List([FromQuery] ItemQuery query, CancellationToken ct) => Envelope(await _svc.ListAsync(query, ct));
     [HttpGet("{id:guid}")] public async Task<IActionResult> Get(Guid id, CancellationToken ct) => Envelope(await _svc.GetAsync(id, ct));
     [HttpPost] public async Task<IActionResult> Create([FromBody] SavePage cmd, CancellationToken ct) => Created(await _svc.CreateAsync(cmd, ct));
     [HttpPut("{id:guid}")] public async Task<IActionResult> Update(Guid id, [FromBody] SavePage cmd, CancellationToken ct) => Envelope(await _svc.UpdateAsync(id, cmd, ct));
@@ -140,7 +140,7 @@ public sealed class AdminRedirectsController : ApiControllerBase
 
     public sealed record AddRedirect(string OldPath, string NewPath);
 
-    [HttpGet] public async Task<IActionResult> List([FromQuery] PageQuery q, CancellationToken ct) => Envelope(await _svc.ListAsync(q, ct));
+    [HttpGet] public async Task<IActionResult> List([FromQuery] PageQuery query, CancellationToken ct) => Envelope(await _svc.ListAsync(query, ct));
     [HttpPost] public async Task<IActionResult> Add([FromBody] AddRedirect req, CancellationToken ct)
     {
         CmsItemOps.EnsureSafeUrl(req.NewPath, required: true);

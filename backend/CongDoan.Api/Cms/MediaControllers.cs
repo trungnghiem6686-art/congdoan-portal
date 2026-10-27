@@ -16,8 +16,8 @@ public sealed class AdminMediaController : ApiControllerBase
 
     [HttpGet]
     [RequirePermission(Permissions.CmsMediaUpload)]
-    public async Task<IActionResult> List([FromQuery] PageQuery q, [FromQuery] string? kind, [FromQuery] bool deleted, CancellationToken ct) =>
-        Envelope(await _svc.ListAsync(q, kind, deleted, ct));
+    public async Task<IActionResult> List([FromQuery] PageQuery query, [FromQuery] string? kind, [FromQuery] bool deleted, CancellationToken ct) =>
+        Envelope(await _svc.ListAsync(query, kind, deleted, ct));
 
     [HttpGet("{id:guid}")]
     [RequirePermission(Permissions.CmsMediaUpload)]
