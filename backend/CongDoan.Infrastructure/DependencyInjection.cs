@@ -90,6 +90,7 @@ public static class DependencyInjection
         services.AddSingleton<ISpreadsheetWriter, CongDoan.Infrastructure.Shared.XlsxWriter>();
         services.AddScoped<ResultService>();
         services.AddScoped<ReportService>();
+        services.AddScoped<CongDoan.Application.Reporting.DashboardService>();
         if (config.GetValue("Workers:Enabled", true)) services.AddHostedService<ExpiryWorker>();
         return services;
     }
