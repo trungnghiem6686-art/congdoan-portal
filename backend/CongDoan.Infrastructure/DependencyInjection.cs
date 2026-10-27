@@ -48,7 +48,16 @@ public static class DependencyInjection
         services.AddScoped<IMediaUsageTracker>(sp => sp.GetRequiredService<MediaService>());
         services.Configure<CmsOptions>(config.GetSection("Cms"));
         services.AddSingleton<IContentSanitizer, ContentSanitizer>();
-        services.AddScoped<ISlugHistory, NullSlugHistory>();
+        services.AddScoped<RedirectService>();
+        services.AddScoped<ISlugHistory>(sp => sp.GetRequiredService<RedirectService>());
+        services.AddScoped<MenuService>();
+        services.AddScoped<BannerService>();
+        services.AddScoped<DocumentService>();
+        services.AddScoped<AlbumService>();
+        services.AddScoped<PageService>();
+        services.AddScoped<SettingsService>();
+        services.AddScoped<PublicSiteService>();
+        services.AddScoped<CmsSeeder>();
         services.AddScoped<PostService>();
         services.AddScoped<CategoryService>();
         services.AddScoped<PublicPostService>();
@@ -89,5 +98,6 @@ public static class MigrationRunner
         using var scope = root.CreateScope();
         await scope.ServiceProvider.GetRequiredService<IdentitySeeder>()
             .SeedAsync(config["Bootstrap:AdminUserName"], config["Bootstrap:AdminPassword"]);
+        await scope.ServiceProvider.GetRequiredService<CmsSeeder>().SeedAsync();
     }
 }
