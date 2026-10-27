@@ -17,13 +17,15 @@ public sealed class AuthService
     private readonly IIdentityDbContext _db;
     private readonly IPasswordService _passwords;
     private readonly IClock _clock;
+    private readonly IAuditWriter _audit;
     private static string? _dummyHash;
 
-    public AuthService(IIdentityDbContext db, IPasswordService passwords, IClock clock)
+    public AuthService(IIdentityDbContext db, IPasswordService passwords, IClock clock, IAuditWriter audit)
     {
         _db = db;
         _passwords = passwords;
         _clock = clock;
+        _audit = audit;
     }
 
     public async Task<LoginResult> LoginAsync(AccountKind kind, string userName, string password, CancellationToken ct = default)
@@ -34,6 +36,7 @@ public sealed class AuthService
         {
             // Spend the same hashing time as a real check so unknown users are not distinguishable.
             _passwords.Verify(_dummyHash ??= _passwords.Hash("not-a-real-password"), password ?? "");
+            await _audit.WriteAsync("auth.login.failed", kind.ToString(), "-", new { userName, reason = "unknown_user" }, ct);
             throw new AppException("invalid_credentials", InvalidMessage, 401);
         }
         if (account.IsLockedOut(now))
@@ -43,6 +46,8 @@ public sealed class AuthService
         {
             account.RegisterFailedLogin(now);
             await _db.SaveChangesAsync(ct);
+            await _audit.WriteAsync("auth.login.failed", kind.ToString(), account.Id.ToString(),
+                new { userName = account.UserName, reason = "wrong_password", lockedOut = account.IsLockedOut(now) }, ct);
             throw new AppException("invalid_credentials", InvalidMessage, 401);
         }
         if (!account.CanSignIn)
@@ -52,6 +57,7 @@ public sealed class AuthService
         var session = new Session(kind, account.Id, now, kind == AccountKind.Admin ? AdminSessionLifetime : CandidateSessionLifetime);
         _db.Sessions.Add(session);
         await _db.SaveChangesAsync(ct);
+        await _audit.WriteAsync("auth.login", kind.ToString(), account.Id.ToString(), new { userName = account.UserName }, ct);
         return new LoginResult(ToInfo(kind, account), session.Id, session.ExpiresUtc);
     }
 
@@ -86,6 +92,7 @@ public sealed class AuthService
         account.SetPassword(_passwords.Hash(newPassword), mustChange: false);
         await RevokeSessionsAsync(kind, accountId, except: currentSessionId, ct);
         await _db.SaveChangesAsync(ct);
+        await _audit.WriteAsync("auth.password.changed", kind.ToString(), accountId.ToString(), null, ct);
     }
 
     public async Task RevokeSessionsAsync(AccountKind kind, Guid accountId, Guid? except = null, CancellationToken ct = default)

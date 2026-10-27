@@ -22,9 +22,11 @@ public sealed class AdminUserService
     private readonly IPermissionChecker _permissions;
     private readonly AuthService _auth;
     private readonly IClock _clock;
+    private readonly IAuditWriter _audit;
 
-    public AdminUserService(IIdentityDbContext db, IPasswordService passwords, IPermissionChecker permissions, AuthService auth, IClock clock)
+    public AdminUserService(IIdentityDbContext db, IPasswordService passwords, IPermissionChecker permissions, AuthService auth, IClock clock, IAuditWriter audit)
     {
+        _audit = audit;
         _db = db;
         _passwords = passwords;
         _permissions = permissions;
@@ -63,6 +65,7 @@ public sealed class AdminUserService
         _db.AdminUsers.Add(user);
         await ReplaceRolesAsync(user.Id, cmd.Roles ?? Array.Empty<RoleGrant>(), ct);
         await _db.SaveChangesAsync(ct);
+        await _audit.WriteAsync("identity.user.create", "AdminUser", user.Id.ToString(), new { user.UserName, cmd.Roles }, ct);
         _permissions.Invalidate();
         return new CreatedAccount<AdminUserDto>(await GetAsync(user.Id, ct), string.IsNullOrEmpty(cmd.Password) ? password : null);
     }
@@ -74,6 +77,7 @@ public sealed class AdminUserService
         u.DisplayName = cmd.DisplayName.Trim();
         u.Email = cmd.Email;
         await _db.SaveChangesAsync(ct);
+        await _audit.WriteAsync("identity.user.update", "AdminUser", id.ToString(), cmd, ct);
         return await GetAsync(id, ct);
     }
 
@@ -84,6 +88,7 @@ public sealed class AdminUserService
         if (!keepsSystemAdmin) await EnsureNotLastSystemAdminAsync(u.Id, ct);
         await ReplaceRolesAsync(u.Id, roles, ct);
         await _db.SaveChangesAsync(ct);
+        await _audit.WriteAsync("identity.user.roles", "AdminUser", id.ToString(), new { roles }, ct);
         _permissions.Invalidate();
         return await GetAsync(id, ct);
     }
@@ -95,6 +100,7 @@ public sealed class AdminUserService
         u.Lock();
         await _auth.RevokeSessionsAsync(AccountKind.Admin, u.Id, ct: ct);
         await _db.SaveChangesAsync(ct);
+        await _audit.WriteAsync("identity.user.lock", "AdminUser", id.ToString(), null, ct);
     }
 
     public async Task UnlockAsync(Guid id, CancellationToken ct = default)
@@ -102,6 +108,7 @@ public sealed class AdminUserService
         var u = await _db.AdminUsers.SingleOrDefaultAsync(x => x.Id == id, ct) ?? throw AppException.NotFound();
         u.Unlock();
         await _db.SaveChangesAsync(ct);
+        await _audit.WriteAsync("identity.user.unlock", "AdminUser", id.ToString(), null, ct);
     }
 
     public async Task<string> ResetPasswordAsync(Guid id, CancellationToken ct = default)
@@ -112,6 +119,7 @@ public sealed class AdminUserService
         u.Unlock();
         await _auth.RevokeSessionsAsync(AccountKind.Admin, u.Id, ct: ct);
         await _db.SaveChangesAsync(ct);
+        await _audit.WriteAsync("identity.user.reset_password", "AdminUser", id.ToString(), null, ct);
         return password;
     }
 
@@ -122,6 +130,7 @@ public sealed class AdminUserService
         u.SoftDelete();
         await _auth.RevokeSessionsAsync(AccountKind.Admin, u.Id, ct: ct);
         await _db.SaveChangesAsync(ct);
+        await _audit.WriteAsync("identity.user.delete", "AdminUser", id.ToString(), null, ct);
     }
 
     public async Task RestoreAsync(Guid id, CancellationToken ct = default)
@@ -129,6 +138,7 @@ public sealed class AdminUserService
         var u = await _db.AdminUsers.SingleOrDefaultAsync(x => x.Id == id, ct) ?? throw AppException.NotFound();
         u.Restore();
         await _db.SaveChangesAsync(ct);
+        await _audit.WriteAsync("identity.user.restore", "AdminUser", id.ToString(), null, ct);
     }
 
     /// <summary>Blocks any change that would leave no active, unscoped system administrator.</summary>

@@ -1,5 +1,6 @@
 using CongDoan.Application.Identity;
 using CongDoan.Application.Shared;
+using CongDoan.Infrastructure.Audit;
 using CongDoan.Infrastructure.Identity;
 using CongDoan.Infrastructure.Shared;
 using Microsoft.EntityFrameworkCore;
@@ -16,6 +17,11 @@ public static class DependencyInjection
         var conn = config.GetConnectionString("Default")
                    ?? throw new InvalidOperationException("ConnectionStrings:Default is not configured.");
         services.TryAddSingleton<IClock, SystemClock>();
+
+        services.AddModuleDbContext<AuditDbContext>(conn, AuditDbContext.Schema);
+        services.AddScoped<IAuditDbContext>(sp => sp.GetRequiredService<AuditDbContext>());
+        services.AddScoped<IAuditWriter, AuditWriter>();
+        services.AddScoped<AuditQueryService>();
 
         services.AddModuleDbContext<IdentityDbContext>(conn, IdentityDbContext.Schema);
         services.AddScoped<IIdentityDbContext>(sp => sp.GetRequiredService<IdentityDbContext>());

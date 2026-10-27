@@ -132,8 +132,11 @@ public sealed class RoleService
     private readonly IPermissionChecker _permissions;
     private readonly PermissionCatalog _catalog;
 
-    public RoleService(IIdentityDbContext db, IPermissionChecker permissions, PermissionCatalog catalog)
+    private readonly IAuditWriter _audit;
+
+    public RoleService(IIdentityDbContext db, IPermissionChecker permissions, PermissionCatalog catalog, IAuditWriter audit)
     {
+        _audit = audit;
         _db = db;
         _permissions = permissions;
         _catalog = catalog;
@@ -154,6 +157,7 @@ public sealed class RoleService
         role.SetPermissions(_catalog.Validate(cmd.Permissions));
         _db.Roles.Add(role);
         await _db.SaveChangesAsync(ct);
+        await _audit.WriteAsync("identity.role.create", "Role", role.Id.ToString(), cmd, ct);
         return ToDto(role);
     }
 
@@ -165,6 +169,7 @@ public sealed class RoleService
         role.Description = cmd.Description;
         role.SetPermissions(_catalog.Validate(cmd.Permissions));
         await _db.SaveChangesAsync(ct);
+        await _audit.WriteAsync("identity.role.update", "Role", id.ToString(), cmd, ct);
         _permissions.Invalidate();
         return ToDto(role);
     }
@@ -177,6 +182,7 @@ public sealed class RoleService
             throw AppException.Conflict("in_use", "Vai trò đang được gán cho tài khoản.");
         _db.Roles.Remove(role);
         await _db.SaveChangesAsync(ct);
+        await _audit.WriteAsync("identity.role.delete", "Role", id.ToString(), null, ct);
         _permissions.Invalidate();
     }
 

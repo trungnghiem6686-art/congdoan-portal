@@ -22,9 +22,11 @@ public sealed class CandidateService
     private readonly ICurrentUser _user;
     private readonly AuthService _auth;
     private readonly IClock _clock;
+    private readonly IAuditWriter _audit;
 
-    public CandidateService(IIdentityDbContext db, IPasswordService passwords, IPermissionChecker permissions, ICurrentUser user, AuthService auth, IClock clock)
+    public CandidateService(IIdentityDbContext db, IPasswordService passwords, IPermissionChecker permissions, ICurrentUser user, AuthService auth, IClock clock, IAuditWriter audit)
     {
+        _audit = audit;
         _db = db;
         _passwords = passwords;
         _permissions = permissions;
@@ -71,6 +73,7 @@ public sealed class CandidateService
         };
         _db.Candidates.Add(c);
         await _db.SaveChangesAsync(ct);
+        await _audit.WriteAsync("identity.candidate.create", "Candidate", c.Id.ToString(), new { c.UserName, c.OrgUnitId }, ct);
         return new CreatedAccount<CandidateDto>(ToDto(c), string.IsNullOrEmpty(cmd.Password) ? password : null);
     }
 
@@ -86,6 +89,7 @@ public sealed class CandidateService
         c.OrgUnitId = cmd.OrgUnitId;
         c.MemberId = cmd.MemberId;
         await _db.SaveChangesAsync(ct);
+        await _audit.WriteAsync("identity.candidate.update", "Candidate", id.ToString(), cmd, ct);
         return ToDto(c);
     }
 
@@ -99,6 +103,7 @@ public sealed class CandidateService
         }
         else c.Unlock();
         await _db.SaveChangesAsync(ct);
+        await _audit.WriteAsync(locked ? "identity.candidate.lock" : "identity.candidate.unlock", "Candidate", id.ToString(), null, ct);
     }
 
     public async Task<string> ResetPasswordAsync(Guid id, CancellationToken ct = default)
@@ -109,6 +114,7 @@ public sealed class CandidateService
         c.Unlock();
         await _auth.RevokeSessionsAsync(AccountKind.Candidate, c.Id, ct: ct);
         await _db.SaveChangesAsync(ct);
+        await _audit.WriteAsync("identity.candidate.reset_password", "Candidate", id.ToString(), null, ct);
         return password;
     }
 
@@ -122,6 +128,7 @@ public sealed class CandidateService
             await _auth.RevokeSessionsAsync(AccountKind.Candidate, c.Id, ct: ct);
         }
         await _db.SaveChangesAsync(ct);
+        await _audit.WriteAsync(restore ? "identity.candidate.restore" : "identity.candidate.delete", "Candidate", id.ToString(), null, ct);
     }
 
     /// <summary>CSV columns: ma, ho_ten, email, so_dien_thoai, ma_don_vi, mat_khau. All rows or none.</summary>
@@ -174,6 +181,7 @@ public sealed class CandidateService
 
         _db.Candidates.AddRange(toCreate.Select(x => x.C));
         await _db.SaveChangesAsync(ct);
+        await _audit.WriteAsync("identity.candidate.import", "Candidate", "-", new { count = toCreate.Count }, ct);
         return new CandidateImportResult(toCreate.Count, toCreate.Select(x => new ImportedCredential(x.C.UserName, x.Password)).ToList());
     }
 
