@@ -86,6 +86,8 @@ public static class DependencyInjection
         services.AddScoped<AttemptRunner>();
         services.AddScoped<IAttemptFinisher>(sp => sp.GetRequiredService<AttemptRunner>());
         services.AddScoped<AttemptService>();
+        services.AddScoped<ExpirySweeper>();
+        if (config.GetValue("Workers:Enabled", true)) services.AddHostedService<ExpiryWorker>();
         return services;
     }
 
