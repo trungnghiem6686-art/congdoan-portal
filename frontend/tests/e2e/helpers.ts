@@ -11,13 +11,17 @@ export class AdminApi {
   private csrf = ''
   private constructor(private ctx: APIRequestContext) {}
 
-  static async create(user = ADMIN_USER, password = ADMIN_PASS) {
+  static async create(user = ADMIN_USER, password = ADMIN_PASS, area: 'admin' | 'thi' = 'admin') {
     const ctx = await request.newContext({ baseURL: API })
     const a = new AdminApi(ctx)
     await a.refresh()
-    await a.call('POST', '/api/admin/auth/login', { userName: user, password })
+    await a.call('POST', `/api/${area}/auth/login`, { userName: user, password })
     await a.refresh()
     return a
+  }
+
+  static candidate(code: string, password: string) {
+    return AdminApi.create(code, password, 'thi')
   }
 
   private async refresh() {
@@ -68,4 +72,41 @@ export async function loginAdminUi(page: import('@playwright/test').Page, userNa
   await page.getByLabel('Mật khẩu').fill(password)
   await page.getByRole('button', { name: 'Đăng nhập' }).click()
   await page.waitForURL((u) => !u.pathname.startsWith('/admin/dang-nhap'))
+}
+
+/** Candidate (password already changed) assigned to a fresh published exam of `questions` single-choice questions. */
+export async function examForCandidate(admin: AdminApi, opts: { questions?: number; exam?: Record<string, unknown> } = {}) {
+  const topic = `E2E-${Math.random().toString(36).slice(2, 8)}`
+  const ids: string[] = []
+  for (let i = 1; i <= (opts.questions ?? 3); i++) {
+    const q = await admin.call('POST', '/api/admin/questions', {
+      type: 'Single', topic, difficulty: 'Easy', content: `Câu hỏi số ${i} (${topic})`, points: 1, explanation: `Giải thích ${i}`,
+      choices: [{ content: `Đúng ${i}`, isCorrect: true }, { content: `Sai ${i}A`, isCorrect: false }, { content: `Sai ${i}B`, isCorrect: false }],
+    })
+    await admin.call('POST', `/api/admin/questions/${q.id}/approve`)
+    ids.push(q.id)
+  }
+  const code = `ts-${Math.random().toString(36).slice(2, 8)}`
+  const created = await admin.call('POST', '/api/admin/candidates', { code, displayName: `Thí sinh ${code}`, password: 'Start12345a' })
+  const c = await AdminApi.candidate(code, 'Start12345a')
+  await c.call('POST', '/api/thi/auth/change-password', { currentPassword: 'Start12345a', newPassword: 'Thi12345a' })
+  await c.dispose()
+  const now = Date.now()
+  const exam = await admin.call('POST', '/api/admin/exams', {
+    title: `Kỳ thi ${topic}`, opensAtUtc: new Date(now - 60_000).toISOString(), closesAtUtc: new Date(now + 86_400_000).toISOString(),
+    durationMinutes: 30, maxAttempts: 2, scoreRule: 'Highest', passScore: 5, resultRelease: 'Immediately', questionSource: 'Manual',
+    showAnswerDetail: true, ...(opts.exam ?? {}),
+  })
+  await admin.call('PUT', `/api/admin/exams/${exam.id}/questions`, { questionIds: ids })
+  await admin.call('PUT', `/api/admin/exams/${exam.id}/assignments`, { add: [{ targetType: 'Candidate', targetId: created.candidate.id }] })
+  await admin.call('POST', `/api/admin/exams/${exam.id}/publish`)
+  return { examId: exam.id as string, title: exam.title as string, code, password: 'Thi12345a' }
+}
+
+export async function loginCandidateUi(page: import('@playwright/test').Page, code: string, password: string) {
+  await page.goto('/thi/dang-nhap')
+  await page.getByLabel('Mã thí sinh').fill(code)
+  await page.getByLabel('Mật khẩu').fill(password)
+  await page.getByRole('button', { name: 'Đăng nhập' }).click()
+  await page.waitForURL(/\/thi$/)
 }
