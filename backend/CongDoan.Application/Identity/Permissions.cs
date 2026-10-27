@@ -16,6 +16,7 @@ public static class Permissions
     public const string CmsPostReview = "cms.post.review";
     public const string CmsPostPublish = "cms.post.publish";
     public const string CmsPostDelete = "cms.post.delete";
+    public const string CmsCategoryManage = "cms.category.manage";
     public const string CmsMediaUpload = "cms.media.upload";
     public const string CmsMediaManage = "cms.media.manage";
     public const string CmsMenuManage = "cms.menu.manage";
@@ -51,6 +52,7 @@ public static class Permissions
         new(CmsPostReview, "cms", "Duyệt bài viết"),
         new(CmsPostPublish, "cms", "Xuất bản bài viết"),
         new(CmsPostDelete, "cms", "Xóa/khôi phục bài viết"),
+        new(CmsCategoryManage, "cms", "Quản lý chuyên mục và thẻ"),
         new(CmsMediaUpload, "cms", "Tải lên tệp"),
         new(CmsMediaManage, "cms", "Quản lý thư viện tệp"),
         new(CmsMenuManage, "cms", "Quản lý menu"),

@@ -46,6 +46,12 @@ public static class DependencyInjection
         services.AddSingleton<IImageProcessor, SkiaImageProcessor>();
         services.AddScoped<MediaService>();
         services.AddScoped<IMediaUsageTracker>(sp => sp.GetRequiredService<MediaService>());
+        services.Configure<CmsOptions>(config.GetSection("Cms"));
+        services.AddSingleton<IContentSanitizer, ContentSanitizer>();
+        services.AddScoped<ISlugHistory, NullSlugHistory>();
+        services.AddScoped<PostService>();
+        services.AddScoped<CategoryService>();
+        services.AddScoped<PublicPostService>();
         return services;
     }
 
