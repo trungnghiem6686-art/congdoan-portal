@@ -73,6 +73,7 @@ public static class DependencyInjection
         services.AddScoped<PostService>();
         services.AddScoped<CategoryService>();
         services.AddScoped<PublicPostService>();
+        services.AddScoped<CongDoan.Application.Cms.Import.LegacyImporter>();
         services.AddModuleDbContext<ExamDbContext>(conn, ExamDbContext.Schema);
         services.AddScoped<IExamDbContext>(sp => sp.GetRequiredService<ExamDbContext>());
         services.AddSingleton<IQuestionTemplate, XlsxQuestionTemplate>();
