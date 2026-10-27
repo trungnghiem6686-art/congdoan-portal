@@ -54,7 +54,7 @@ public sealed class AttemptRunner : IAttemptFinisher
         var now = _clock.UtcNow;
         await EnsureWritableAsync(attempt, now, ct);
         EnsureWriter(attempt, writer);
-        await _db.Attempts.Where(a => a.Id == attemptId && a.WriterToken == writer).ExecuteUpdateAsync(s => s.SetProperty(a => a.WriterSeenUtc, now), ct);
+        await _db.Attempts.Where(a => a.Id == attemptId && a.WriterToken == writer && a.Status == AttemptStatus.InProgress).ExecuteUpdateAsync(s => s.SetProperty(a => a.WriterSeenUtc, now), ct);
     }
 
     /// <summary>Stores an answer if its sequence number is newer than the stored one (late or replayed requests are ignored).</summary>
@@ -74,35 +74,42 @@ public sealed class AttemptRunner : IAttemptFinisher
         if (question.Type != QuestionType.Multiple && picked.Count > 1) throw AppException.Validation("Câu hỏi này chỉ chọn một phương án.");
         var json = JsonSerializer.Serialize(picked, AttemptService.Json);
 
-        var accepted = await ConditionalWriteAsync(attemptId, attemptQuestionId, json, cmd, now, ct);
-        if (!accepted && !await _db.Answers.AnyAsync(a => a.AttemptId == attemptId && a.AttemptQuestionId == attemptQuestionId, ct))
+        var accepted = false;
+        var finished = false;
+        await _db.InTransactionAsync(async () =>
         {
-            // First save of this question; a racing first save may insert concurrently, then fall back to the conditional update.
-            _db.Answers.Add(new Answer(attemptId, attemptQuestionId) { SelectedJson = json, Seq = cmd.Seq, Flagged = cmd.Flagged, SavedUtc = now });
-            try
+            accepted = finished = false;
+            // Updating the attempt row first locks it until commit: a concurrent finish waits for this save, so grading
+            // always sees it, and a save arriving after the attempt was closed changes nothing.
+            var live = await _db.Attempts.Where(a => a.Id == attemptId && a.Status == AttemptStatus.InProgress)
+                .ExecuteUpdateAsync(s => s.SetProperty(a => a.LastSeq, a => a.LastSeq < cmd.Seq ? cmd.Seq : a.LastSeq), ct) > 0;
+            if (!live)
             {
-                await _db.SaveChangesAsync(ct);
+                finished = true;
+                return;
+            }
+            var answer = await _db.Answers.SingleOrDefaultAsync(a => a.AttemptId == attemptId && a.AttemptQuestionId == attemptQuestionId, ct);
+            if (answer is null)
+            {
+                _db.Answers.Add(new Answer(attemptId, attemptQuestionId) { SelectedJson = json, Seq = cmd.Seq, Flagged = cmd.Flagged, SavedUtc = now });
                 accepted = true;
             }
-            catch (DbUpdateException ex) when (_db.IsUniqueViolation(ex))
+            else if (answer.Seq < cmd.Seq)
             {
-                _db.ResetTracking();
-                accepted = await ConditionalWriteAsync(attemptId, attemptQuestionId, json, cmd, now, ct);
+                answer.SelectedJson = json;
+                answer.Seq = cmd.Seq;
+                answer.Flagged = cmd.Flagged;
+                answer.SavedUtc = now;
+                accepted = true;
             }
-        }
+            if (accepted) await _db.SaveChangesAsync(ct);
+        }, System.Data.IsolationLevel.ReadCommitted, ct);
+        if (finished) throw AppException.Conflict("attempt_finished", "Bài thi đã kết thúc, không thể sửa câu trả lời.");
         if (accepted)
-            await _db.Attempts.Where(a => a.Id == attemptId && a.WriterToken == writer)
-                .ExecuteUpdateAsync(s => s.SetProperty(a => a.WriterSeenUtc, now).SetProperty(a => a.LastSeq, a => a.LastSeq < cmd.Seq ? cmd.Seq : a.LastSeq), ct);
-        else if (await _db.Attempts.AsNoTracking().AnyAsync(a => a.Id == attemptId && a.Status != AttemptStatus.InProgress, ct))
-            throw AppException.Conflict("attempt_finished", "Bài thi đã kết thúc, không thể sửa câu trả lời.");
+            await _db.Attempts.Where(a => a.Id == attemptId && a.WriterToken == writer && a.Status == AttemptStatus.InProgress)
+                .ExecuteUpdateAsync(s => s.SetProperty(a => a.WriterSeenUtc, now), ct);
         return new SaveResult(accepted, cmd.Seq, now, accepted ? null : "stale");
     }
-
-    private async Task<bool> ConditionalWriteAsync(Guid attemptId, Guid questionId, string json, SaveAnswer cmd, DateTime now, CancellationToken ct) =>
-        await _db.Answers.Where(a => a.AttemptId == attemptId && a.AttemptQuestionId == questionId && a.Seq < cmd.Seq
-                                     && _db.Attempts.Any(t => t.Id == attemptId && t.Status == AttemptStatus.InProgress))
-            .ExecuteUpdateAsync(s => s.SetProperty(a => a.SelectedJson, json).SetProperty(a => a.Seq, cmd.Seq)
-                .SetProperty(a => a.Flagged, cmd.Flagged).SetProperty(a => a.SavedUtc, now), ct) > 0;
 
     public async Task<SubmitResult> SubmitAsync(Guid candidateId, Guid attemptId, CancellationToken ct = default)
     {
@@ -122,26 +129,31 @@ public sealed class AttemptRunner : IAttemptFinisher
         await _db.Attempts.Where(a => a.Id == attemptId && a.Status == AttemptStatus.InProgress)
             .ExecuteUpdateAsync(s => s.SetProperty(a => a.Status, status).SetProperty(a => a.FinishedUtc, now), ct);
 
-        _db.ResetTracking();
-        var attempt = await _db.Attempts.SingleOrDefaultAsync(a => a.Id == attemptId, ct) ?? throw AppException.NotFound();
-        if (attempt.IsGraded || attempt.Status == AttemptStatus.Voided) return;
-        var exam = await _db.Exams.AsNoTracking().SingleAsync(e => e.Id == attempt.ExamId, ct);
-        var questions = await _db.AttemptQuestions.AsNoTracking().Where(q => q.AttemptId == attemptId).ToListAsync(ct);
-        var answers = await _db.Answers.Where(a => a.AttemptId == attemptId).ToListAsync(ct);
-        var grade = Grader.Grade(questions, answers, exam.PassScore, exam.RoundingDecimals);
-        attempt.ApplyGrade(grade.CorrectCount, grade.Points, grade.Score, grade.Passed);
-        foreach (var a in answers) a.AwardedPoints = grade.Awarded.GetValueOrDefault(a.AttemptQuestionId);
-        try
-        {
-            await _db.SaveChangesAsync(ct);
-        }
-        catch (DbUpdateConcurrencyException)
+        // Grading is saved under the row version. A conflict means the row changed after we read it: either another
+        // finisher graded it (then stop) or something else touched it (then grade again from a fresh read).
+        for (var round = 0; ; round++)
         {
             _db.ResetTracking();
-            return; // graded by a concurrent finisher
+            var attempt = await _db.Attempts.SingleOrDefaultAsync(a => a.Id == attemptId, ct) ?? throw AppException.NotFound();
+            if (attempt.IsGraded || attempt.Status == AttemptStatus.Voided) return;
+            var exam = await _db.Exams.AsNoTracking().SingleAsync(e => e.Id == attempt.ExamId, ct);
+            var questions = await _db.AttemptQuestions.AsNoTracking().Where(q => q.AttemptId == attemptId).ToListAsync(ct);
+            var answers = await _db.Answers.Where(a => a.AttemptId == attemptId).ToListAsync(ct);
+            var grade = Grader.Grade(questions, answers, exam.PassScore, exam.RoundingDecimals);
+            attempt.ApplyGrade(grade.CorrectCount, grade.Points, grade.Score, grade.Passed);
+            foreach (var a in answers) a.AwardedPoints = grade.Awarded.GetValueOrDefault(a.AttemptQuestionId);
+            try
+            {
+                await _db.SaveChangesAsync(ct);
+            }
+            catch (DbUpdateConcurrencyException) when (round < 4)
+            {
+                continue;
+            }
+            await _audit.WriteAsync("exam.attempt.submit", "Attempt", attemptId.ToString(),
+                new { status = attempt.Status.ToString(), attempt.Score, attempt.Passed, grade.CorrectCount }, ct);
+            return;
         }
-        await _audit.WriteAsync("exam.attempt.submit", "Attempt", attemptId.ToString(),
-            new { status = attempt.Status.ToString(), attempt.Score, attempt.Passed, grade.CorrectCount }, ct);
     }
 
     public async Task LogEventAsync(Guid candidateId, Guid attemptId, string kind, CancellationToken ct = default)
@@ -153,7 +165,7 @@ public sealed class AttemptRunner : IAttemptFinisher
         _db.AttemptEvents.Add(new AttemptEvent(attemptId, kind, null, _clock.UtcNow));
         await _db.SaveChangesAsync(ct);
         if (kind == "tab_hidden")
-            await _db.Attempts.Where(a => a.Id == attemptId).ExecuteUpdateAsync(s => s.SetProperty(a => a.TabSwitchCount, a => a.TabSwitchCount + 1), ct);
+            await _db.Attempts.Where(a => a.Id == attemptId && a.Status == AttemptStatus.InProgress).ExecuteUpdateAsync(s => s.SetProperty(a => a.TabSwitchCount, a => a.TabSwitchCount + 1), ct);
     }
 
     public async Task<SubmitResult> SummaryAsync(Guid attemptId, CancellationToken ct = default)
