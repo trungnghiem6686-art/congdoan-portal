@@ -49,7 +49,7 @@ public sealed class MenuService
         if (!await _db.Menus.AnyAsync(m => m.Id == menuId, ct)) throw AppException.NotFound();
         var item = new MenuItem { MenuId = menuId };
         var (slug, manual) = SlugRules.Resolve(cmd.Slug, cmd.Label);
-        await EnsureSlugFreeAsync(slug, null, ct);
+        slug = await EnsureSlugFreeAsync(slug, null, AutoPick(cmd, manual), ct);
         await ApplyAsync(item, cmd, ct);
         item.Slug = slug;
         item.SlugIsManual = manual;
@@ -67,7 +67,7 @@ public sealed class MenuService
         if (cmd.RowVersion is not null) _db.ExpectRowVersion(item, RowVersions.Decode(cmd.RowVersion));
         var oldSlug = item.Slug;
         var (slug, manual) = string.IsNullOrWhiteSpace(cmd.Slug) && item.SlugIsManual ? (item.Slug, true) : SlugRules.Resolve(cmd.Slug, cmd.Label);
-        if (slug != item.Slug) await EnsureSlugFreeAsync(slug, id, ct);
+        if (slug != item.Slug) slug = await EnsureSlugFreeAsync(slug, id, AutoPick(cmd, manual), ct);
         await EnsureNoCycleAsync(item, cmd.ParentId, ct);
         await ApplyAsync(item, cmd, ct);
         if (cmd.SortOrder is { } order) item.SortOrder = order;
@@ -152,10 +152,19 @@ public sealed class MenuService
             if (!seen.Add(p.Value)) throw new AppException("menu_cycle", "Không thể đặt mục menu làm con của chính nó hoặc của mục con của nó.", 400);
     }
 
-    private async Task EnsureSlugFreeAsync(string slug, Guid? self, CancellationToken ct)
+    /// <summary>
+    /// A URL item's address is its URL, so its slug is internal: a taken or reserved name silently gets the next free slug.
+    /// For every other type the slug is the public address and a clash is reported with a suggestion.
+    /// </summary>
+    private static bool AutoPick(SaveMenuItem cmd, bool manual) =>
+        !manual && string.Equals(cmd.LinkType, nameof(MenuLinkType.Url), StringComparison.OrdinalIgnoreCase);
+
+    private async Task<string> EnsureSlugFreeAsync(string slug, Guid? self, bool autoPick, CancellationToken ct)
     {
         async Task<bool> Taken(string s) => PublicPaths.Reserved.Contains(s) || await _db.MenuItems.AnyAsync(i => i.Slug == s && i.Id != self, ct);
-        if (await Taken(slug)) throw await SlugRules.DuplicateAsync(slug, Taken);
+        if (!await Taken(slug)) return slug;
+        var conflict = (SlugConflictException)await SlugRules.DuplicateAsync(slug, Taken);
+        return autoPick ? conflict.Suggestion : throw conflict;
     }
 
     private static List<MenuItemDto> Build(IReadOnlyCollection<MenuItem> items, Guid? parent) =>

@@ -1,0 +1,31 @@
+@import '@fontsource/be-vietnam-pro/vietnamese-400.css';
+@import '@fontsource/be-vietnam-pro/vietnamese-600.css';
+@import '@fontsource/be-vietnam-pro/vietnamese-700.css';
+@import '@fontsource/be-vietnam-pro/latin-400.css';
+@import '@fontsource/be-vietnam-pro/latin-600.css';
+@import '@fontsource/be-vietnam-pro/latin-700.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --navy: #12365b;
+  --blue: #176bb0;
+  --red: #c62828;
+  --bg: #f4f6f8;
+  --text: #1e293b;
+}
+
+html { font-size: 16px; }
+body { background: var(--bg); color: var(--text); }
+
+/* Visible focus for keyboard users (WCAG 2.4.7 / 2.4.11). */
+:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+
+.container-site { @apply mx-auto w-full max-w-site px-4; }
+
+@media print {
+  header, footer, nav, .no-print { display: none !important; }
+  body { background: #fff; }
+}

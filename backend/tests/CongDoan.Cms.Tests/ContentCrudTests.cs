@@ -113,6 +113,17 @@ public class ContentCrudTests : IClassFixture<ApiFactory>
     }
 
     [Fact]
+    public async Task Url_Menu_Item_With_Reserved_Name_Gets_Free_Slug()
+    {
+        using var c = await AdminAsync();
+        var menu = await MainMenuAsync(c);
+        var item = await AddItemAsync(c, menu, new { label = "Tìm kiếm", linkType = "Url", url = "/tim-kiem" });
+        Assert.StartsWith("tim-kiem-", item.GetProperty("slug").GetString());
+        var again = await AddItemAsync(c, menu, new { label = "Tìm kiếm", linkType = "Url", url = "/tim-kiem?q=x" });
+        Assert.NotEqual(item.GetProperty("slug").GetString(), again.GetProperty("slug").GetString());
+    }
+
+    [Fact]
     public async Task Manual_Slug_Edit_Persists()
     {
         using var c = await AdminAsync();
