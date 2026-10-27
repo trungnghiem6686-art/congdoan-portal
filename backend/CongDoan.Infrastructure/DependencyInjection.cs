@@ -82,7 +82,9 @@ public static class DependencyInjection
         services.AddScoped<ExamService>();
         services.AddScoped<ExamTemplateService>();
         services.AddScoped<IExamNoticeProvider, ExamNoticeProvider>();
-        services.AddScoped<IAttemptFinisher, PendingFinisher>();
+        services.Configure<ExamOptions>(config.GetSection("Exam"));
+        services.AddScoped<AttemptRunner>();
+        services.AddScoped<IAttemptFinisher>(sp => sp.GetRequiredService<AttemptRunner>());
         services.AddScoped<AttemptService>();
         return services;
     }

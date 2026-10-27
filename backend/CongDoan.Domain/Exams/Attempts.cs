@@ -47,11 +47,31 @@ public sealed class Attempt
     /// <summary>Highest autosave sequence accepted (monotonic, rejects stale writes).</summary>
     public long LastSeq { get; set; }
     /// <summary>The browser tab currently allowed to write answers.</summary>
-    public string? WriterToken { get; set; }
+    public string? WriterToken { get; private set; }
+    /// <summary>Token of the tab that was taken over (its saves get "superseded", not "read only").</summary>
+    public string? PreviousWriterToken { get; private set; }
+    public DateTime? WriterSeenUtc { get; set; }
     public int TabSwitchCount { get; set; }
     public byte[] RowVersion { get; private set; } = Array.Empty<byte>();
 
     public bool IsFinished => Status != AttemptStatus.InProgress;
+
+    public bool IsGraded => Score is not null;
+
+    public void AssignWriter(string token, DateTime nowUtc)
+    {
+        PreviousWriterToken = WriterToken;
+        WriterToken = token;
+        WriterSeenUtc = nowUtc;
+    }
+
+    public void ApplyGrade(int correctCount, decimal points, decimal score, bool passed)
+    {
+        CorrectCount = correctCount;
+        Points = points;
+        Score = score;
+        Passed = passed;
+    }
 
     public void Finish(AttemptStatus status, DateTime finishedUtc, int correctCount, decimal points, bool passed, decimal? score = null)
     {

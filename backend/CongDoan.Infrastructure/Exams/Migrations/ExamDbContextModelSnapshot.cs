@@ -93,6 +93,9 @@ namespace CongDoan.Infrastructure.Exams.Migrations
                         .HasPrecision(9, 2)
                         .HasColumnType("decimal(9,2)");
 
+                    b.Property<string>("PreviousWriterToken")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<byte[]>("RowVersion")
                         .IsConcurrencyToken()
                         .IsRequired()
@@ -111,6 +114,9 @@ namespace CongDoan.Infrastructure.Exams.Migrations
 
                     b.Property<int>("TabSwitchCount")
                         .HasColumnType("int");
+
+                    b.Property<DateTime?>("WriterSeenUtc")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("WriterToken")
                         .HasMaxLength(64)

@@ -8,7 +8,7 @@ namespace CongDoan.Application.Exams;
 
 public sealed record SnapshotChoice(Guid Id, string Content, bool IsCorrect);
 
-public sealed record StartResult(Guid AttemptId, bool Resumed, int AttemptNo, DateTime DeadlineUtc, DateTime ServerNowUtc, string WriterToken);
+public sealed record StartResult(Guid AttemptId, bool Resumed, int AttemptNo, DateTime DeadlineUtc, DateTime ServerNowUtc);
 
 public sealed record AttemptChoiceView(Guid Id, string Content);
 
@@ -77,7 +77,7 @@ public sealed class AttemptService
 
         var deadline = new[] { now.AddMinutes(exam.DurationMinutes), exam.ClosesAtUtc }.Min();
         var maxScore = order.Sum(id => byId[id].v.Points);
-        var attempt = new Attempt(examId, candidateId, used + 1, now, deadline, maxScore) { WriterToken = NewToken() };
+        var attempt = new Attempt(examId, candidateId, used + 1, now, deadline, maxScore);
         _db.Attempts.Add(attempt);
         var no = 0;
         foreach (var id in order)
@@ -103,7 +103,7 @@ public sealed class AttemptService
         _db.AttemptEvents.Add(new AttemptEvent(attempt.Id, "start", null, now));
         await _db.SaveChangesAsync(ct);
         await _audit.WriteAsync("exam.attempt.start", "Attempt", attempt.Id.ToString(), new { examId, attempt.AttemptNo, questions = order.Count }, ct);
-        return new StartResult(attempt.Id, false, attempt.AttemptNo, attempt.DeadlineUtc, now, attempt.WriterToken!);
+        return new StartResult(attempt.Id, false, attempt.AttemptNo, attempt.DeadlineUtc, now);
     }
 
     /// <summary>The candidate's own attempt (404 for anyone else's, anti-IDOR).</summary>
@@ -138,7 +138,7 @@ public sealed class AttemptService
     private Task<Attempt?> ActiveAsync(Guid examId, Guid candidateId, CancellationToken ct) =>
         _db.Attempts.AsNoTracking().SingleOrDefaultAsync(a => a.ExamId == examId && a.CandidateId == candidateId && a.Status == AttemptStatus.InProgress, ct);
 
-    private static StartResult Resume(Attempt a, DateTime now) => new(a.Id, true, a.AttemptNo, a.DeadlineUtc, now, a.WriterToken ?? "");
+    private static StartResult Resume(Attempt a, DateTime now) => new(a.Id, true, a.AttemptNo, a.DeadlineUtc, now);
 
     public static string NewToken() => Convert.ToHexString(RandomNumberGenerator.GetBytes(16)).ToLowerInvariant();
 }
