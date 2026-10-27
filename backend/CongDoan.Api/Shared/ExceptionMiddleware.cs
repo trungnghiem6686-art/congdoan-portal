@@ -22,6 +22,11 @@ public sealed class ExceptionMiddleware
         {
             await _next(context);
         }
+        catch (RowErrorsException ex) when (!context.Response.HasStarted)
+        {
+            context.Response.Clear();
+            await ErrorWriter.WriteAsync(context, ex.Status, ex.Code, ex.Message, new { errors = ex.Errors });
+        }
         catch (AppException ex) when (!context.Response.HasStarted)
         {
             context.Response.Clear();

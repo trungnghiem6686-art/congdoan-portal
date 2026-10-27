@@ -88,6 +88,34 @@ namespace CongDoan.Infrastructure.Identity.Migrations
                     b.ToTable("AdminUsers", "identity");
                 });
 
+            modelBuilder.Entity("CongDoan.Domain.Identity.AdminUserRole", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("AdminUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("OrgUnitId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("RoleId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrgUnitId");
+
+                    b.HasIndex("RoleId");
+
+                    b.HasIndex("AdminUserId", "RoleId", "OrgUnitId")
+                        .IsUnique()
+                        .HasFilter("[OrgUnitId] IS NOT NULL");
+
+                    b.ToTable("AdminUserRoles", "identity");
+                });
+
             modelBuilder.Entity("CongDoan.Domain.Identity.Candidate", b =>
                 {
                     b.Property<Guid>("Id")
@@ -162,6 +190,135 @@ namespace CongDoan.Infrastructure.Identity.Migrations
                     b.ToTable("Candidates", "identity");
                 });
 
+            modelBuilder.Entity("CongDoan.Domain.Identity.CandidateGroup", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<Guid?>("OrgUnitId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrgUnitId");
+
+                    b.ToTable("CandidateGroups", "identity");
+                });
+
+            modelBuilder.Entity("CongDoan.Domain.Identity.CandidateGroupMember", b =>
+                {
+                    b.Property<Guid>("GroupId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CandidateId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("GroupId", "CandidateId");
+
+                    b.HasIndex("CandidateId");
+
+                    b.ToTable("CandidateGroupMembers", "identity");
+                });
+
+            modelBuilder.Entity("CongDoan.Domain.Identity.OrgUnit", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<Guid?>("ParentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.HasIndex("ParentId");
+
+                    b.ToTable("OrgUnits", "identity");
+                });
+
+            modelBuilder.Entity("CongDoan.Domain.Identity.Role", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<bool>("IsSystem")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.ToTable("Roles", "identity");
+                });
+
+            modelBuilder.Entity("CongDoan.Domain.Identity.RolePermission", b =>
+                {
+                    b.Property<Guid>("RoleId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Permission")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("RoleId", "Permission");
+
+                    b.ToTable("RolePermissions", "identity");
+                });
+
             modelBuilder.Entity("CongDoan.Domain.Identity.Session", b =>
                 {
                     b.Property<Guid>("Id")
@@ -188,6 +345,87 @@ namespace CongDoan.Infrastructure.Identity.Migrations
                     b.HasIndex("Kind", "AccountId");
 
                     b.ToTable("Sessions", "identity");
+                });
+
+            modelBuilder.Entity("CongDoan.Domain.Identity.AdminUser", b =>
+                {
+                    b.HasOne("CongDoan.Domain.Identity.OrgUnit", null)
+                        .WithMany()
+                        .HasForeignKey("OrgUnitId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("CongDoan.Domain.Identity.AdminUserRole", b =>
+                {
+                    b.HasOne("CongDoan.Domain.Identity.AdminUser", null)
+                        .WithMany()
+                        .HasForeignKey("AdminUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CongDoan.Domain.Identity.OrgUnit", null)
+                        .WithMany()
+                        .HasForeignKey("OrgUnitId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("CongDoan.Domain.Identity.Role", null)
+                        .WithMany()
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("CongDoan.Domain.Identity.Candidate", b =>
+                {
+                    b.HasOne("CongDoan.Domain.Identity.OrgUnit", null)
+                        .WithMany()
+                        .HasForeignKey("OrgUnitId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("CongDoan.Domain.Identity.CandidateGroup", b =>
+                {
+                    b.HasOne("CongDoan.Domain.Identity.OrgUnit", null)
+                        .WithMany()
+                        .HasForeignKey("OrgUnitId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("CongDoan.Domain.Identity.CandidateGroupMember", b =>
+                {
+                    b.HasOne("CongDoan.Domain.Identity.Candidate", null)
+                        .WithMany()
+                        .HasForeignKey("CandidateId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CongDoan.Domain.Identity.CandidateGroup", null)
+                        .WithMany()
+                        .HasForeignKey("GroupId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("CongDoan.Domain.Identity.OrgUnit", b =>
+                {
+                    b.HasOne("CongDoan.Domain.Identity.OrgUnit", null)
+                        .WithMany()
+                        .HasForeignKey("ParentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("CongDoan.Domain.Identity.RolePermission", b =>
+                {
+                    b.HasOne("CongDoan.Domain.Identity.Role", null)
+                        .WithMany("Permissions")
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("CongDoan.Domain.Identity.Role", b =>
+                {
+                    b.Navigation("Permissions");
                 });
 #pragma warning restore 612, 618
         }

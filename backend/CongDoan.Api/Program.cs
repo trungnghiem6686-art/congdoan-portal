@@ -20,6 +20,7 @@ var app = builder.Build();
 
 if (app.Configuration.GetValue("Database:MigrateOnStartup", false))
     await MigrationRunner.MigrateAllAsync(app.Services);
+await MigrationRunner.SeedAsync(app.Services, app.Configuration);
 
 app.UseMiddleware<RequestIdMiddleware>();
 app.UseMiddleware<ExceptionMiddleware>();

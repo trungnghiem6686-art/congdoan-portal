@@ -8,6 +8,11 @@ public interface IIdentityDbContext
     DbSet<AdminUser> AdminUsers { get; }
     DbSet<Candidate> Candidates { get; }
     DbSet<Session> Sessions { get; }
+    DbSet<Role> Roles { get; }
+    DbSet<AdminUserRole> AdminUserRoles { get; }
+    DbSet<OrgUnit> OrgUnits { get; }
+    DbSet<CandidateGroup> CandidateGroups { get; }
+    DbSet<CandidateGroupMember> CandidateGroupMembers { get; }
 
     Task<int> SaveChangesAsync(CancellationToken ct = default);
 }

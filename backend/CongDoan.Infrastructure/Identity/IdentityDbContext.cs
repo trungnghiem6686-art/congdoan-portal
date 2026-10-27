@@ -14,6 +14,11 @@ public sealed class IdentityDbContext : DbContext, IIdentityDbContext
     public DbSet<AdminUser> AdminUsers => Set<AdminUser>();
     public DbSet<Candidate> Candidates => Set<Candidate>();
     public DbSet<Session> Sessions => Set<Session>();
+    public DbSet<Role> Roles => Set<Role>();
+    public DbSet<AdminUserRole> AdminUserRoles => Set<AdminUserRole>();
+    public DbSet<OrgUnit> OrgUnits => Set<OrgUnit>();
+    public DbSet<CandidateGroup> CandidateGroups => Set<CandidateGroup>();
+    public DbSet<CandidateGroupMember> CandidateGroupMembers => Set<CandidateGroupMember>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {

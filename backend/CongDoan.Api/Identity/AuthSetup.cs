@@ -58,6 +58,11 @@ public static class AuthSetup
                 .RequireAuthenticatedUser()
                 .RequireClaim(AuthSchemes.KindClaim, "candidate"));
 
+        services.AddSingleton<Microsoft.AspNetCore.Authorization.IAuthorizationPolicyProvider, PermissionPolicyProvider>();
+        services.AddScoped<Microsoft.AspNetCore.Authorization.IAuthorizationHandler, PermissionHandler>();
+        services.AddHttpContextAccessor();
+        services.AddScoped<CongDoan.Application.Shared.ICurrentUser, CongDoan.Api.Shared.HttpCurrentUser>();
+
         services.AddAntiforgery(o =>
         {
             o.HeaderName = "X-XSRF-TOKEN";

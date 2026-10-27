@@ -1,5 +1,6 @@
 using CongDoan.Application.Identity;
 using CongDoan.Domain.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace CongDoan.Testing;
@@ -36,11 +37,13 @@ public static class Seed
         });
     }
 
-    // Overridden in Task 3 once roles exist; kept as a hook so Task 2 tests compile without RBAC.
-    private static Task SeedRoleLink(IServiceProvider sp, Guid userId, string role) =>
-        RoleSeeder?.Invoke(sp, userId, role) ?? Task.CompletedTask;
-
-    public static Func<IServiceProvider, Guid, string, Task>? RoleSeeder { get; set; }
+    private static async Task SeedRoleLink(IServiceProvider sp, Guid userId, string roleCode, Guid? orgUnitId = null)
+    {
+        var db = sp.GetRequiredService<IIdentityDbContext>();
+        var role = await db.Roles.SingleAsync(r => r.Code == roleCode);
+        db.AdminUserRoles.Add(new AdminUserRole(userId, role.Id, orgUnitId));
+        await db.SaveChangesAsync();
+    }
 
     public static async Task<TestClient> LoginAdminAsync(this ApiFactory f, string userName, string password = Password)
     {

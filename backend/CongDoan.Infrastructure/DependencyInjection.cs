@@ -21,6 +21,15 @@ public static class DependencyInjection
         services.AddScoped<IIdentityDbContext>(sp => sp.GetRequiredService<IdentityDbContext>());
         services.AddSingleton<IPasswordService, PasswordService>();
         services.AddScoped<AuthService>();
+        services.AddMemoryCache();
+        services.AddSingleton<PermissionCatalog>();
+        services.AddScoped<IPermissionChecker, PermissionService>();
+        services.AddScoped<AdminUserService>();
+        services.AddScoped<CandidateService>();
+        services.AddScoped<OrgUnitService>();
+        services.AddScoped<CandidateGroupService>();
+        services.AddScoped<RoleService>();
+        services.AddScoped<IdentitySeeder>();
         return services;
     }
 
@@ -50,5 +59,13 @@ public static class MigrationRunner
             var ctx = (DbContext)scope.ServiceProvider.GetRequiredService(module.ContextType);
             await ctx.Database.MigrateAsync();
         }
+    }
+
+    /// <summary>Idempotent reference data (default roles, optional bootstrap admin from configuration).</summary>
+    public static async Task SeedAsync(IServiceProvider root, IConfiguration config)
+    {
+        using var scope = root.CreateScope();
+        await scope.ServiceProvider.GetRequiredService<IdentitySeeder>()
+            .SeedAsync(config["Bootstrap:AdminUserName"], config["Bootstrap:AdminPassword"]);
     }
 }
