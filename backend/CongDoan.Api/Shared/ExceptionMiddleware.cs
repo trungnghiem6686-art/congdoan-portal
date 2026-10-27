@@ -6,7 +6,11 @@ namespace CongDoan.Api.Shared;
 /// <summary>Turns unhandled exceptions into the standard envelope; never leaks messages or stack traces.</summary>
 public sealed class ExceptionMiddleware
 {
-    internal static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
+    internal static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web)
+    {
+        // Readable Vietnamese in responses; safe because every response is application/json with nosniff.
+        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+    };
     private readonly RequestDelegate _next;
     private readonly ILogger<ExceptionMiddleware> _logger;
 

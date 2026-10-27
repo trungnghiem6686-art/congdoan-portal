@@ -9,6 +9,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddPortalAuth(builder.Configuration);
 builder.Services.AddControllers()
+    .AddJsonOptions(o => o.JsonSerializerOptions.Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping)
     .ConfigureApiBehaviorOptions(o => o.InvalidModelStateResponseFactory = ctx =>
     {
         var message = string.Join(" ", ctx.ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).Where(m => m.Length > 0));

@@ -2,7 +2,9 @@ using CongDoan.Application.Identity;
 using CongDoan.Application.Shared;
 using CongDoan.Application.Cms;
 using CongDoan.Infrastructure.Audit;
+using CongDoan.Application.Exams;
 using CongDoan.Infrastructure.Cms;
+using CongDoan.Infrastructure.Exams;
 using CongDoan.Infrastructure.Identity;
 using CongDoan.Infrastructure.Shared;
 using Microsoft.EntityFrameworkCore;
@@ -71,6 +73,11 @@ public static class DependencyInjection
         services.AddScoped<PostService>();
         services.AddScoped<CategoryService>();
         services.AddScoped<PublicPostService>();
+        services.AddModuleDbContext<ExamDbContext>(conn, ExamDbContext.Schema);
+        services.AddScoped<IExamDbContext>(sp => sp.GetRequiredService<ExamDbContext>());
+        services.AddSingleton<IQuestionTemplate, XlsxQuestionTemplate>();
+        services.AddScoped<QuestionService>();
+        services.AddScoped<QuestionImportService>();
         return services;
     }
 
