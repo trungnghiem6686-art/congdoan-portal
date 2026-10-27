@@ -89,6 +89,9 @@ foreach ($kv in $webEnv) { $lines += "set `"$kv`"" }
 $lines += "`"$NodeExe`" server.js >> `"$(Join-Path $DataDir 'logs\web.log')`" 2>&1"
 Set-Content -Path $launcher -Value $lines -Encoding ASCII
 icacls $launcher /inheritance:r /grant "Administrators:F" "SYSTEM:F" "${WebTaskUser}:RX" | Out-Null
+# The web task reads its release folder and appends to logs\web.log.
+icacls $WebDir /grant "${WebTaskUser}:(OI)(CI)RX" | Out-Null
+icacls (Join-Path $DataDir "logs") /grant "${WebTaskUser}:(OI)(CI)M" | Out-Null
 
 $action = New-ScheduledTaskAction -Execute "cmd.exe" -Argument "/c `"$launcher`""
 $trigger = New-ScheduledTaskTrigger -AtStartup
