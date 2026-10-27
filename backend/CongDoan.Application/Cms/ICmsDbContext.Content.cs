@@ -14,6 +14,9 @@ public partial interface ICmsDbContext
     /// <summary>Runs work in one database transaction (retry-safe).</summary>
     Task InTransactionAsync(Func<Task> work, CancellationToken ct = default);
 
+    /// <summary>Stops tracking an entity (after a lost concurrency race).</summary>
+    void Detach(object entity);
+
     /// <summary>Optimistic concurrency: compare against the version the client last saw.</summary>
     void ExpectRowVersion(object entity, byte[] rowVersion);
 }

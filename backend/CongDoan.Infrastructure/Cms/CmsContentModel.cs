@@ -9,6 +9,8 @@ public sealed partial class CmsDbContext
     public DbSet<Category> Categories => Set<Category>();
     public DbSet<Tag> Tags => Set<Tag>();
 
+    public void Detach(object entity) => Entry(entity).State = EntityState.Detached;
+
     public void ExpectRowVersion(object entity, byte[] rowVersion) =>
         Entry(entity).Property("RowVersion").OriginalValue = rowVersion;
 

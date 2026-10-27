@@ -62,6 +62,8 @@ public static class DependencyInjection
         services.AddScoped<ContactService>();
         services.AddScoped<SearchService>();
         services.AddScoped<PublicContentService>();
+        services.AddScoped<ScheduledPublisher>();
+        if (config.GetValue("Workers:Enabled", true)) services.AddHostedService<PublishWorker>();
         services.AddScoped<SectionCatalog>();
         services.AddScoped<LayoutService>();
         services.AddScoped<SectionResolver>();
