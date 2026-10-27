@@ -22,16 +22,26 @@ public sealed class ExceptionMiddleware
         {
             await _next(context);
         }
+        catch (AppException ex) when (!context.Response.HasStarted)
+        {
+            context.Response.Clear();
+            await ErrorWriter.WriteAsync(context, ex.Status, ex.Code, ex.Message);
+        }
+        catch (Exception ex) when (!context.Response.HasStarted && IsConcurrency(ex))
+        {
+            context.Response.Clear();
+            await ErrorWriter.WriteAsync(context, StatusCodes.Status409Conflict, "concurrency_conflict",
+                "Dữ liệu đã được người khác thay đổi. Vui lòng tải lại trước khi lưu.");
+        }
         catch (Exception ex) when (!context.Response.HasStarted)
         {
             _logger.LogError(ex, "Unhandled exception for request {RequestId}", context.TraceIdentifier);
             context.Response.Clear();
-            context.Response.Headers[RequestIdMiddleware.Header] = context.TraceIdentifier;
-            context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-            context.Response.ContentType = "application/json; charset=utf-8";
-            var envelope = ApiEnvelope<object>.Fail(new ApiError("internal_error",
-                "Đã có lỗi xảy ra. Vui lòng thử lại sau.", context.TraceIdentifier));
-            await JsonSerializer.SerializeAsync(context.Response.Body, envelope, Json);
+            await ErrorWriter.WriteAsync(context, StatusCodes.Status500InternalServerError, "internal_error",
+                "Đã có lỗi xảy ra. Vui lòng thử lại sau.");
         }
     }
+
+    // Matched by name so the Api layer does not need a direct EF Core dependency here.
+    private static bool IsConcurrency(Exception ex) => ex.GetType().Name == "DbUpdateConcurrencyException";
 }
