@@ -5,7 +5,7 @@ namespace CongDoan.Api.Shared;
 
 [ApiController]
 [Produces("application/json")]
-public abstract class ApiControllerBase : ControllerBase
+public abstract class ApiControllerBase : Controller
 {
     protected IActionResult Envelope<T>(T data) => Ok(ApiEnvelope<T>.Ok(data));
 

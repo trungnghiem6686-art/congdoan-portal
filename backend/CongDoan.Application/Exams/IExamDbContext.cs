@@ -11,6 +11,12 @@ public partial interface IExamDbContext
 
     Task<int> SaveChangesAsync(CancellationToken ct = default);
     void ExpectRowVersion(object entity, byte[] rowVersion);
+
+    /// <summary>True when the save failed on a unique index (used to detect lost races).</summary>
+    bool IsUniqueViolation(DbUpdateException ex);
+
+    /// <summary>Forget tracked entities after a failed save so the next read sees the database.</summary>
+    void ResetTracking();
     Task InTransactionAsync(Func<Task> work, System.Data.IsolationLevel isolation = System.Data.IsolationLevel.ReadCommitted, CancellationToken ct = default);
 }
 

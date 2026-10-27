@@ -18,6 +18,11 @@ public sealed partial class ExamDbContext : DbContext, IExamDbContext
 
     public void ExpectRowVersion(object entity, byte[] rowVersion) => Entry(entity).Property("RowVersion").OriginalValue = rowVersion;
 
+    public bool IsUniqueViolation(DbUpdateException ex) =>
+        ex.InnerException is Microsoft.Data.SqlClient.SqlException { Number: 2601 or 2627 };
+
+    public void ResetTracking() => ChangeTracker.Clear();
+
     public async Task InTransactionAsync(Func<Task> work, IsolationLevel isolation = IsolationLevel.ReadCommitted, CancellationToken ct = default)
     {
         var strategy = Database.CreateExecutionStrategy();

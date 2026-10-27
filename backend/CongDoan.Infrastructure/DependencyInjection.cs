@@ -82,6 +82,8 @@ public static class DependencyInjection
         services.AddScoped<ExamService>();
         services.AddScoped<ExamTemplateService>();
         services.AddScoped<IExamNoticeProvider, ExamNoticeProvider>();
+        services.AddScoped<IAttemptFinisher, PendingFinisher>();
+        services.AddScoped<AttemptService>();
         return services;
     }
 
