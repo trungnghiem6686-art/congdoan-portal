@@ -27,7 +27,7 @@ D:\congdoan\releases\<ngày-giờ>\api      bản publish API (thay mới mỗi 
 D:\congdoan\releases\<ngày-giờ>\web      bản build Next.js standalone
 D:\congdoan\site                         thư mục site IIS, chỉ chứa web.config
 D:\congdoan-data\media                   tệp tải lên — KHÔNG BAO GIỜ nằm trong releases
-D:\congdoan-data\logs                    log API (xoay vòng theo ngày, giữ 30 tệp) và web.log
+D:\congdoan-data\logs                    log API và web, xoay vòng theo ngày, giữ 30 ngày
 D:\congdoan-data\config\api.env          biến môi trường API (chứa bí mật; chỉ Administrators/SYSTEM đọc)
 D:\congdoan-data\config\web.env          biến môi trường web
 E:\congdoan-backup                       bản sao lưu (nên ở ổ hoặc máy khác)
@@ -155,7 +155,7 @@ Lượt thi lưu thời hạn trong database, nên dịch vụ khởi động l�
 ## 7. Vận hành
 
 - **Sao lưu:** lên lịch `backup.ps1` mỗi đêm ngoài giờ thi bằng Task Scheduler. Mỗi tháng thử khôi phục một bản lên staging (xem `docs/rollback.md`).
-- **Log:** API ghi `api-YYYYMMDD.log`, mỗi tệp tối đa 50 MB, giữ 30 tệp. `web.log` không tự xoay vòng; theo dõi dung lượng hoặc xoay bằng tác vụ định kỳ.
+- **Log:** API ghi `api-YYYYMMDD.log`, mỗi tệp tối đa 50 MB, giữ 30 tệp. Next.js ghi `web-YYYYMMDD.log`, tự xóa tệp cũ hơn 30 ngày.
 - **Cảnh báo:** theo dõi `/api/health` bằng công cụ giám sát sẵn có của đơn vị, cùng dung lượng ổ chứa media và backup.
 - **Media:** dịch vụ chỉ có quyền Modify trên `media` và `logs`. IIS không có đường dẫn nào trỏ vào thư mục media, nên tệp tải lên không bao giờ được thực thi. Tệp hạn chế chỉ phục vụ qua API, có kiểm tra quyền.
 - **Đổi bí mật:**

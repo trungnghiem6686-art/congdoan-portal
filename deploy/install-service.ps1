@@ -83,17 +83,35 @@ icacls (Join-Path $DataDir "config") /inheritance:r /grant "Administrators:(OI)(
 
 # 4. Web (Next.js) as a startup task that restarts itself.
 $webEnv = Read-EnvFile $WebEnvFile
-$launcher = Join-Path $WebDir "start-web.cmd"
-$lines = @("@echo off", "cd /d `"$WebDir`"", "set PORT=3000", "set HOSTNAME=127.0.0.1", "set NODE_ENV=production")
-foreach ($kv in $webEnv) { $lines += "set `"$kv`"" }
-$lines += "`"$NodeExe`" server.js >> `"$(Join-Path $DataDir 'logs\web.log')`" 2>&1"
-Set-Content -Path $launcher -Value $lines -Encoding ASCII
+$launcher = Join-Path $WebDir "start-web.ps1"
+$logDir = Join-Path $DataDir "logs"
+function Quote([string] $v) { "'" + $v.Replace("'", "''") + "'" }
+$lines = @('$ErrorActionPreference = "Continue"', "Set-Location $(Quote $WebDir)",
+    '$env:PORT = "3000"', '$env:HOSTNAME = "127.0.0.1"', '$env:NODE_ENV = "production"')
+foreach ($kv in $webEnv) {
+    $i = $kv.IndexOf("=")
+    $lines += "`$env:$($kv.Substring(0, $i)) = $(Quote $kv.Substring($i + 1))"
+}
+# One log file per day (web-YYYYMMDD.log); files older than 30 days are removed when the day changes.
+$lines += @(
+    "`$logDir = $(Quote $logDir)",
+    '$day = ""',
+    "& $(Quote $NodeExe) server.js 2>&1 | ForEach-Object {",
+    '    $today = Get-Date -Format "yyyyMMdd"',
+    '    if ($today -ne $day) {',
+    '        $day = $today',
+    '        Get-ChildItem $logDir -Filter "web-*.log" | Where-Object LastWriteTime -lt (Get-Date).AddDays(-30) | Remove-Item -ErrorAction SilentlyContinue',
+    '    }',
+    '    Add-Content -Path (Join-Path $logDir "web-$day.log") -Value ("$(Get-Date -Format s) " + $_) -Encoding UTF8',
+    '}'
+)
+Set-Content -Path $launcher -Value $lines -Encoding UTF8
 icacls $launcher /inheritance:r /grant "Administrators:F" "SYSTEM:F" "${WebTaskUser}:RX" | Out-Null
-# The web task reads its release folder and appends to logs\web.log.
+# The web task reads its release folder and writes logs\web-YYYYMMDD.log.
 icacls $WebDir /grant "${WebTaskUser}:(OI)(CI)RX" | Out-Null
 icacls (Join-Path $DataDir "logs") /grant "${WebTaskUser}:(OI)(CI)M" | Out-Null
 
-$action = New-ScheduledTaskAction -Execute "cmd.exe" -Argument "/c `"$launcher`""
+$action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$launcher`""
 $trigger = New-ScheduledTaskTrigger -AtStartup
 $settings = New-ScheduledTaskSettingsSet -RestartCount 999 -RestartInterval (New-TimeSpan -Minutes 1) `
     -ExecutionTimeLimit ([TimeSpan]::Zero) -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries
@@ -115,4 +133,4 @@ try {
 try {
     $w = Invoke-WebRequest -UseBasicParsing -Uri "http://127.0.0.1:3000/" -TimeoutSec 20
     Write-Host "Web: $($w.StatusCode)"
-} catch { Write-Warning "Web chưa trả lời: $($_.Exception.Message). Xem $DataDir\logs\web.log." }
+} catch { Write-Warning "Web chưa trả lời: $($_.Exception.Message). Xem $DataDir\logs\web-<ngày>.log." }
