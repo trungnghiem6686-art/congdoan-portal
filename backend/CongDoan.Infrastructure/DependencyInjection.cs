@@ -78,6 +78,10 @@ public static class DependencyInjection
         services.AddSingleton<IQuestionTemplate, XlsxQuestionTemplate>();
         services.AddScoped<QuestionService>();
         services.AddScoped<QuestionImportService>();
+        services.AddScoped<ICandidateDirectory, CandidateDirectory>();
+        services.AddScoped<ExamService>();
+        services.AddScoped<ExamTemplateService>();
+        services.AddScoped<IExamNoticeProvider, ExamNoticeProvider>();
         return services;
     }
 

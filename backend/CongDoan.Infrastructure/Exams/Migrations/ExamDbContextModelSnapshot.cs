@@ -23,6 +23,189 @@ namespace CongDoan.Infrastructure.Exams.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("CongDoan.Domain.Exams.Answer", b =>
+                {
+                    b.Property<Guid>("AttemptId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("AttemptQuestionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal?>("AwardedPoints")
+                        .HasPrecision(9, 2)
+                        .HasColumnType("decimal(9,2)");
+
+                    b.Property<bool>("Flagged")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("SavedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("SelectedJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<long>("Seq")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("AttemptId", "AttemptQuestionId");
+
+                    b.HasIndex("AttemptQuestionId");
+
+                    b.ToTable("Answers", "exam");
+                });
+
+            modelBuilder.Entity("CongDoan.Domain.Exams.Attempt", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("AttemptNo")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("CandidateId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("CorrectCount")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("DeadlineUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("ExamId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("FinishedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<long>("LastSeq")
+                        .HasColumnType("bigint");
+
+                    b.Property<decimal>("MaxScore")
+                        .HasPrecision(9, 2)
+                        .HasColumnType("decimal(9,2)");
+
+                    b.Property<bool?>("Passed")
+                        .HasColumnType("bit");
+
+                    b.Property<decimal?>("Points")
+                        .HasPrecision(9, 2)
+                        .HasColumnType("decimal(9,2)");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<decimal?>("Score")
+                        .HasPrecision(6, 3)
+                        .HasColumnType("decimal(6,3)");
+
+                    b.Property<DateTime>("StartedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TabSwitchCount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("WriterToken")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExamId", "CandidateId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_Attempt_OneInProgress")
+                        .HasFilter("[Status] = 0");
+
+                    b.HasIndex("Status", "DeadlineUtc");
+
+                    b.HasIndex("ExamId", "CandidateId", "AttemptNo")
+                        .IsUnique()
+                        .HasDatabaseName("UX_Attempt_No");
+
+                    b.ToTable("Attempts", "exam");
+                });
+
+            modelBuilder.Entity("CongDoan.Domain.Exams.AttemptEvent", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("AtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("AttemptId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Detail")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AttemptId");
+
+                    b.ToTable("AttemptEvents", "exam");
+                });
+
+            modelBuilder.Entity("CongDoan.Domain.Exams.AttemptQuestion", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("AttemptId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ChoicesJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Explanation")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("OrderNo")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("Points")
+                        .HasPrecision(9, 2)
+                        .HasColumnType("decimal(9,2)");
+
+                    b.Property<Guid>("QuestionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("QuestionVersionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AttemptId", "OrderNo")
+                        .IsUnique();
+
+                    b.ToTable("AttemptQuestions", "exam");
+                });
+
             modelBuilder.Entity("CongDoan.Domain.Exams.Choice", b =>
                 {
                     b.Property<Guid>("Id")
@@ -48,6 +231,249 @@ namespace CongDoan.Infrastructure.Exams.Migrations
                     b.HasIndex("QuestionVersionId");
 
                     b.ToTable("Choices", "exam");
+                });
+
+            modelBuilder.Entity("CongDoan.Domain.Exams.Exam", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("ClosesAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Code")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<int>("DurationMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Instructions")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("LogTabSwitches")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("MaxAttempts")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("OpensAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("PassScore")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<DateTime?>("PublishedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("QuestionSource")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ResultRelease")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("ResultsApproved")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("ResultsApprovedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("RoundingDecimals")
+                        .HasColumnType("int");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<int>("ScoreRule")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("ShowAnswerDetail")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("ShowExplanation")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("ShuffleChoices")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("ShuffleQuestions")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime>("UpdatedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Status", "IsDeleted", "OpensAtUtc");
+
+                    b.ToTable("Exams", "exam");
+                });
+
+            modelBuilder.Entity("CongDoan.Domain.Exams.ExamAssignment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ExamId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("TargetId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("TargetType")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TargetType", "TargetId");
+
+                    b.HasIndex("ExamId", "TargetType", "TargetId")
+                        .IsUnique();
+
+                    b.ToTable("ExamAssignments", "exam");
+                });
+
+            modelBuilder.Entity("CongDoan.Domain.Exams.ExamMatrixRule", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Count")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("Difficulty")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("ExamId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Topic")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int?>("Type")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExamId");
+
+                    b.ToTable("ExamMatrixRules", "exam");
+                });
+
+            modelBuilder.Entity("CongDoan.Domain.Exams.ExamQuestion", b =>
+                {
+                    b.Property<Guid>("ExamId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("QuestionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.HasKey("ExamId", "QuestionId");
+
+                    b.HasIndex("QuestionId");
+
+                    b.ToTable("ExamQuestions", "exam");
+                });
+
+            modelBuilder.Entity("CongDoan.Domain.Exams.ExamTemplate", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<string>("SettingsJson")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("UpdatedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ExamTemplates", "exam");
+                });
+
+            modelBuilder.Entity("CongDoan.Domain.Exams.GradeRevision", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("AtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("AttemptId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("By")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("NewScore")
+                        .HasPrecision(6, 3)
+                        .HasColumnType("decimal(6,3)");
+
+                    b.Property<decimal?>("OldScore")
+                        .HasPrecision(6, 3)
+                        .HasColumnType("decimal(6,3)");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AttemptId");
+
+                    b.ToTable("GradeRevisions", "exam");
                 });
 
             modelBuilder.Entity("CongDoan.Domain.Exams.Question", b =>
@@ -189,11 +615,86 @@ namespace CongDoan.Infrastructure.Exams.Migrations
                     b.ToTable("QuestionVersions", "exam");
                 });
 
+            modelBuilder.Entity("CongDoan.Domain.Exams.Answer", b =>
+                {
+                    b.HasOne("CongDoan.Domain.Exams.Attempt", null)
+                        .WithMany()
+                        .HasForeignKey("AttemptId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CongDoan.Domain.Exams.AttemptQuestion", null)
+                        .WithMany()
+                        .HasForeignKey("AttemptQuestionId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("CongDoan.Domain.Exams.Attempt", b =>
+                {
+                    b.HasOne("CongDoan.Domain.Exams.Exam", null)
+                        .WithMany()
+                        .HasForeignKey("ExamId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("CongDoan.Domain.Exams.AttemptQuestion", b =>
+                {
+                    b.HasOne("CongDoan.Domain.Exams.Attempt", null)
+                        .WithMany()
+                        .HasForeignKey("AttemptId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("CongDoan.Domain.Exams.Choice", b =>
                 {
                     b.HasOne("CongDoan.Domain.Exams.QuestionVersion", null)
                         .WithMany("Choices")
                         .HasForeignKey("QuestionVersionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("CongDoan.Domain.Exams.ExamAssignment", b =>
+                {
+                    b.HasOne("CongDoan.Domain.Exams.Exam", null)
+                        .WithMany()
+                        .HasForeignKey("ExamId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("CongDoan.Domain.Exams.ExamMatrixRule", b =>
+                {
+                    b.HasOne("CongDoan.Domain.Exams.Exam", null)
+                        .WithMany()
+                        .HasForeignKey("ExamId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("CongDoan.Domain.Exams.ExamQuestion", b =>
+                {
+                    b.HasOne("CongDoan.Domain.Exams.Exam", null)
+                        .WithMany()
+                        .HasForeignKey("ExamId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("CongDoan.Domain.Exams.Question", null)
+                        .WithMany()
+                        .HasForeignKey("QuestionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("CongDoan.Domain.Exams.GradeRevision", b =>
+                {
+                    b.HasOne("CongDoan.Domain.Exams.Attempt", null)
+                        .WithMany()
+                        .HasForeignKey("AttemptId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

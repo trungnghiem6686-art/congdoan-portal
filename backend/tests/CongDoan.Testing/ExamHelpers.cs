@@ -28,3 +28,56 @@ public static class ExamHelpers
         return q;
     }
 }
+
+public static class ExamSetup
+{
+    /// <summary>Creates approved questions under a unique topic and returns (topic, ids).</summary>
+    public static async Task<(string Topic, List<Guid> Ids)> BankAsync(this TestClient c, int count, string difficulty = "Medium", string? topic = null)
+    {
+        topic ??= CmsHelpers.Unique("ChuDe");
+        var ids = new List<Guid>();
+        for (var i = 0; i < count; i++)
+        {
+            var body = new
+            {
+                type = "Single", topic, difficulty, content = $"Câu {i + 1} – {topic}", explanation = $"Giải thích {i + 1}", points = 1,
+                choices = new[] { new { content = "Đúng " + i, isCorrect = true }, new { content = "Sai A " + i, isCorrect = false }, new { content = "Sai B " + i, isCorrect = false } },
+            };
+            ids.Add((await c.CreateQuestionAsync(body)).GetProperty("id").GetGuid());
+        }
+        return (topic, ids);
+    }
+
+    public static async Task<JsonElement> CreateExamAsync(this TestClient c, ApiFactory f, object? overrides = null)
+    {
+        var body = new Dictionary<string, object?>
+        {
+            ["title"] = CmsHelpers.Unique("Kỳ thi"),
+            ["opensAtUtc"] = f.Clock.UtcNow.AddMinutes(-5),
+            ["closesAtUtc"] = f.Clock.UtcNow.AddDays(1),
+            ["durationMinutes"] = 30,
+            ["maxAttempts"] = 2,
+            ["scoreRule"] = "Highest",
+            ["passScore"] = 5,
+            ["resultRelease"] = "Immediately",
+            ["shuffleQuestions"] = false,
+            ["shuffleChoices"] = false,
+            ["questionSource"] = "Manual",
+        };
+        if (overrides is not null)
+            foreach (var p in overrides.GetType().GetProperties()) body[p.Name] = p.GetValue(overrides);
+        return await TestClient.DataAsync(await c.PostAsync("/api/admin/exams", body), HttpStatusCode.Created);
+    }
+
+    /// <summary>Exam with manual questions, assigned to the candidates, published.</summary>
+    public static async Task<Guid> PublishedExamAsync(this TestClient c, ApiFactory f, IReadOnlyList<Guid> questionIds, IReadOnlyList<Guid> candidateIds, object? overrides = null)
+    {
+        var exam = await c.CreateExamAsync(f, overrides);
+        var id = exam.GetProperty("id").GetGuid();
+        await TestClient.DataAsync(await c.PutAsync($"/api/admin/exams/{id}/questions", new { questionIds }));
+        await TestClient.DataAsync(await c.PutAsync($"/api/admin/exams/{id}/assignments",
+            new { add = candidateIds.Select(x => new { targetType = "Candidate", targetId = x }).ToArray() }));
+        await TestClient.DataAsync(await c.PostAsync($"/api/admin/exams/{id}/publish"));
+        return id;
+    }
+}
