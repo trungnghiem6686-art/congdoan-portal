@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { AdminApi, PNG, createAdminUser, loginAdminUi, unique } from './helpers'
+import { AdminApi, PNG, createAdminUser, loginAdminUi, removeHomepageTestBlocks, unique } from './helpers'
 
 let admin: AdminApi
 test.beforeAll(async () => {
@@ -177,6 +177,7 @@ test('block_reorder_by_drag_and_by_buttons', async ({ page }) => {
 })
 
 test('preview_three_viewports_does_not_change_public', async ({ page, context }) => {
+  await removeHomepageTestBlocks(admin)
   await loginAdminUi(page)
   await page.goto('/admin/trang-chu')
   const marker = unique('Nội dung xem trước')
@@ -198,6 +199,7 @@ test('preview_three_viewports_does_not_change_public', async ({ page, context })
 })
 
 test('publish_then_public_updates_without_deploy', async ({ page, context }) => {
+  await removeHomepageTestBlocks(admin)
   await loginAdminUi(page)
   await page.goto('/admin/trang-chu')
   const marker = unique('Đã xuất bản lên trang chủ')
@@ -215,6 +217,7 @@ test('publish_then_public_updates_without_deploy', async ({ page, context }) => 
 })
 
 test('rollback_restores', async ({ page, context }) => {
+  await removeHomepageTestBlocks(admin)
   await loginAdminUi(page)
   await page.goto('/admin/trang-chu')
   const marker = unique('Bản sẽ bị khôi phục')

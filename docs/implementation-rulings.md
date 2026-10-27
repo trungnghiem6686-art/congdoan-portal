@@ -67,7 +67,7 @@ Các quyết định (ruling) đưa ra khi kế hoạch hoặc spec chưa nói r
 - Task 23: Ruling: k6 binary download was denied by the environment's permission policy — script written and syntax-checked, load figures recorded as "chưa đo" — cost: load capacity unknown until run on staging.
 - Final: Ruling: install-service.ps1 granted folder rights only to the API account, so the web task (LOCAL SERVICE) could not read its release or write logs\web.log and would fail to start — fixed by granting RX on WebDir and M on logs; no RED test possible (no PowerShell/Windows here) — cost if wrong: web task fails on first install, visible in Task Scheduler history.
 
-## Điểm nhỏ chưa sửa (deferred minors)
+## Điểm nhỏ phát hiện khi rà soát (đã sửa sau đó, xem mục cuối)
 
 - Importer catches only AppException per post; an unreadable image file (IOException/access denied) aborts the run instead of being reported.
 - first-save insert path in AttemptRunner.SaveAsync does not recheck Status=InProgress in SQL; a save racing with finish can leave an ungraded answer row (score and result unaffected).
@@ -99,3 +99,10 @@ Các quyết định (ruling) đưa ra khi kế hoạch hoặc spec chưa nói r
 - Task 21: complete (commits a693086..11d4b83, tests: bash -c 'cd backend && dotnet test CongDoan.sln >/dev/null && cd ../frontend && npx vitest run && npx playwright test' →   35 passed (50.9s))
 - Task 22: complete (commits 11d4b83..68739bb, tests: bash -c 'cd backend && dotnet test CongDoan.sln' → Passed!  - Failed:     0, Passed:    59, Skipped:     0, Total:    59, Duration: 49 s - CongDoan.Exam.Tests.dll (net8.0))
 - Task 23: complete (commits 68739bb..1d8fb27, tests: bash -c 'cd backend && dotnet test CongDoan.sln >/dev/null && cd ../frontend && npx vitest run >/dev/null && npx playwright test' →   37 passed (57.7s))
+
+## Sửa sau khi gộp vào main
+
+- Importer: lỗi đọc tệp ảnh (IOException, thiếu quyền) giờ được ghi vào báo cáo, bài vẫn được nhập — test `ImporterTests.Unreadable_Image_File_Is_Reported_Not_Fatal` RED→GREEN.
+- Lưu bài chạy đua với nộp bài: nặng hơn đánh giá ban đầu. Test `SaveSubmitRaceTests.First_Saves_Racing_Submit_Leave_No_Ungraded_Answers` (12 bài × 8 câu lưu cùng lúc với nộp) cho thấy 40–65 câu đã báo "đã lưu" nhưng không được chấm, và 4/12 bài đã nộp không bao giờ được chấm (cập nhật WriterSeenUtc sau khi nộp làm đổi RowVersion, bước chấm tưởng đã có người chấm nên bỏ qua). Sửa: mỗi lần lưu khóa dòng bài làm trong một giao dịch trước khi ghi; các cập nhật phụ (WriterSeenUtc, đếm chuyển tab) chỉ chạy khi bài còn đang làm; bước chấm gặp xung đột thì đọc lại và chấm lại. Test đạt 3/3 lần chạy, 60/60 test phần thi đạt.
+- Trang xem trước: chỉ chấp nhận `homepage` hoặc `page:<GUID>` — test `tests/preview.test.ts` RED→GREEN.
+- Log web: tệp khởi chạy Next.js chuyển sang PowerShell, ghi `web-YYYYMMDD.log` và xóa tệp cũ hơn 30 ngày. Không có test (môi trường này không có PowerShell/Windows) — chưa kiểm chứng.

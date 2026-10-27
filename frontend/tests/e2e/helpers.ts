@@ -110,3 +110,15 @@ export async function loginCandidateUi(page: import('@playwright/test').Page, co
   await page.getByRole('button', { name: 'Đăng nhập' }).click()
   await page.waitForURL(/\/thi$/)
 }
+
+/** Blocks the homepage E2E tests add carry one of these markers in their HTML. */
+const HOMEPAGE_TEST_MARKERS = ['Nội dung xem trước', 'Đã xuất bản lên trang chủ', 'Bản sẽ bị khôi phục']
+
+/** Drops blocks left by earlier homepage E2E runs from the draft, so repeated runs never reach the per-page block limit. */
+export async function removeHomepageTestBlocks(admin: AdminApi) {
+  type Section = { id: string; type: string; title?: string | null; visible: boolean; startsUtc?: string | null; endsUtc?: string | null; config: { html?: string } }
+  const state = await admin.call<{ draft?: { sections: Section[] } | null; published?: { sections: Section[] } | null }>('GET', '/api/admin/homepage')
+  const sections = state.draft?.sections ?? state.published?.sections ?? []
+  const kept = sections.filter((s) => !(s.type === 'intro_text' && HOMEPAGE_TEST_MARKERS.some((m) => s.config?.html?.includes(m))))
+  if (kept.length !== sections.length) await admin.call('PUT', '/api/admin/homepage/draft', { sections: kept, note: 'Dọn khối do kiểm thử E2E thêm' })
+}

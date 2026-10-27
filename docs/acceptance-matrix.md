@@ -18,9 +18,9 @@ Kết quả lấy từ lần chạy ngày **2026-10-27**, commit `e0dd210`, trê
 
 | Bộ kiểm thử | Lệnh | Kết quả |
 |---|---|---|
-| Backend: tích hợp với SQL Server thật | `cd backend && dotnet test CongDoan.sln` | **149/149 đạt** (Shared 7, Identity 16, Cms 67, Exam 59) |
-| Frontend: đơn vị | `cd frontend && npx vitest run` | **12/12 đạt** |
-| Frontend: E2E, API và web thật | `cd frontend && npx playwright test` | **37/37 đạt** |
+| Backend: tích hợp với SQL Server thật | `cd backend && dotnet test CongDoan.sln` | **151/151 đạt** (Shared 7, Identity 16, Cms 68, Exam 60) |
+| Frontend: đơn vị | `cd frontend && npx vitest run` | **14/14 đạt** |
+| Frontend: E2E, API và web thật | `cd frontend && npx playwright test` | **37/37 đạt**, chạy hai lần liên tiếp |
 | Lint, kiểu | `npx tsc --noEmit && npx eslint .` | đạt |
 | Build release | `dotnet build`, `next build` (standalone) | đạt. Bản standalone chạy được bằng `node server.js`: trang chủ, tệp tĩnh và `/api` đều trả 200 |
 | Script migration idempotent | `dotnet ef migrations script --idempotent` (4 module), áp 2 lần lên database trống bằng `sqlcmd -I` | đạt: 47 bảng, khớp database phát triển; lần 2 không lỗi |
@@ -70,6 +70,7 @@ Tên test trong bảng dưới:
 | | Mất mạng rồi có mạng lại | Thi | `offline_then_online_marks_unsynced_then_syncs` | Đạt |
 | | Request đến sai thứ tự | Exam | `AutosaveTests.Stale_Seq_Does_Not_Overwrite_Newer_Answer` | Đạt |
 | | Mở nhiều tab | Exam | `AutosaveTests.Second_Tab_Gets_ReadOnly_Conflict` | Đạt |
+| | Lưu bài cùng lúc với nộp bài: câu đã báo "đã lưu" luôn được chấm, bài nộp luôn được chấm | Exam | `SaveSubmitRaceTests.First_Saves_Racing_Submit_Leave_No_Ungraded_Answers` (12 bài × 8 câu, SQL Server thật) | Đạt |
 | **Kết thúc** | Nộp lặp idempotent | Exam | `SubmitTests.Submit_Twice_Returns_Same_Result_One_Row`, `ExpiryTests.Expired_Then_Submit_Is_Idempotent_Noop` | Đạt |
 | | Hết giờ vẫn đóng khi đã tắt trình duyệt; khởi động lại không kéo dài giờ | Exam | `ExpiryTests.Expired_Attempt_Closed_And_Graded_Without_Browser`, `ExpiryTests.Worker_Restart_Mid_Exam_Does_Not_Extend_Deadline` | Đạt |
 | | Sửa đồng hồ máy không kéo dài lượt | Exam + Thi | `AutosaveTests.Save_After_Deadline_Rejected_Ignoring_Client_Timestamp`, `timer_uses_server_deadline_not_device_clock`, `after_deadline_ui_locked`, `ExpiryTests.Timestamps_Read_From_Database_Are_Serialized_As_Utc` | Đạt |
@@ -84,7 +85,7 @@ Tên test trong bảng dưới:
 | | Xuất file chống formula injection, có ghi nhật ký | Reporting | `ExportTests.Export_Escapes_Formula_Prefixes`, `ExportTests.Csv_Quotes_Commas_Quotes_And_Newlines`, `ExportTests.Export_Writes_AuditRow`, `report_export_downloads_csv` | Đạt |
 | **SEO / chuyển dữ liệu** | Metadata, canonical, sitemap, robots | Web + Cms | `sitemap_robots_and_canonical`, `SitemapTests.Sitemap_Lists_Public_Content_Only` | Đạt |
 | | Đổi đường dẫn thì có redirect 301 (Next.js trả 308), không chuyển về trang chủ | Cms + Web | `ContentCrudTests.Rename_Updates_Slug_And_Old_Url_Redirects_301`, `ContentCrudTests.Renamed_Post_Old_Slug_Redirects_301`, `renamed_menu_url_redirects_permanently`, `rename_menu_item_changes_url_and_old_url_redirects`, `manage_redirects_from_admin` | Đạt |
-| | Nhập chạy lại an toàn, ảnh hỏng không làm dừng, có báo cáo đối soát | Importer | `ImporterTests.Rerun_Does_Not_Duplicate`, `ImporterTests.Broken_Image_Logged_Not_Fatal`, `ImporterTests.Old_Url_Redirects_301_Not_Home`, `ImporterTests.Reconciliation_Counts_Match_Fixture` | Đạt trên dữ liệu MẪU |
+| | Nhập chạy lại an toàn, ảnh hỏng không làm dừng, có báo cáo đối soát | Importer | `ImporterTests.Rerun_Does_Not_Duplicate`, `ImporterTests.Broken_Image_Logged_Not_Fatal`, `ImporterTests.Unreadable_Image_File_Is_Reported_Not_Fatal`, `ImporterTests.Old_Url_Redirects_301_Not_Home`, `ImporterTests.Reconciliation_Counts_Match_Fixture` | Đạt trên dữ liệu MẪU |
 | | Chuyển dữ liệu thật của trang cũ | Importer | | **Chưa làm**: chưa có bản xuất hay quyền khảo sát trang cũ |
 | **Vận hành** | Build thành công | Toàn bộ | build release (xem bảng trên) | Đạt |
 | | Tác vụ nền đúng sau khởi động lại | Cms + Exam | `SchedulingTests.Worker_Restart_Does_Not_Double_Publish`, `ExpiryTests.Worker_Restart_Mid_Exam_Does_Not_Extend_Deadline` | Đạt |
