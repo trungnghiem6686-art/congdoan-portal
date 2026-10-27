@@ -107,6 +107,17 @@ public class RbacTests : IClassFixture<RbacFactory>
     }
 
     [Fact]
+    public async Task Me_Permissions_Lists_Effective_Codes()
+    {
+        await _f.AdminAsync("perm-editor", false, Roles.Editor);
+        using var c = await _f.LoginAdminAsync("perm-editor");
+        var data = await TestClient.DataAsync(await c.GetAsync("/api/admin/auth/permissions"));
+        var codes = data.EnumerateArray().Select(x => x.GetString()).ToList();
+        Assert.Contains(Permissions.CmsPostCreate, codes);
+        Assert.DoesNotContain(Permissions.CmsPostPublish, codes);
+    }
+
+    [Fact]
     public async Task Locking_User_Revokes_Their_Sessions()
     {
         await _f.AdminAsync("sys-lock", false, Roles.SystemAdmin);

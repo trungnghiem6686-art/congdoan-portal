@@ -17,6 +17,8 @@ public interface IPermissionChecker
 {
     Task<PermissionScope> ScopeAsync(Guid adminId, string permission, CancellationToken ct = default);
     Task<bool> HasAsync(Guid adminId, string permission, Guid? orgUnitId = null, CancellationToken ct = default);
+    /// <summary>Every permission code the admin holds in any scope (for showing/hiding UI; the API still checks each call).</summary>
+    Task<IReadOnlyList<string>> CodesAsync(Guid adminId, CancellationToken ct = default);
     void Invalidate();
 }
 
@@ -41,6 +43,9 @@ public sealed class PermissionService : IPermissionChecker
         var scope = await ScopeAsync(adminId, permission, ct);
         return orgUnitId is null ? scope.Any : scope.Covers(orgUnitId);
     }
+
+    public async Task<IReadOnlyList<string>> CodesAsync(Guid adminId, CancellationToken ct = default) =>
+        (await GrantsAsync(adminId, ct)).Where(g => g.Value.Any).Select(g => g.Key).OrderBy(c => c).ToList();
 
     public async Task<PermissionScope> ScopeAsync(Guid adminId, string permission, CancellationToken ct = default)
     {

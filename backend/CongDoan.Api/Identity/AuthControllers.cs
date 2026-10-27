@@ -87,6 +87,13 @@ public sealed class AdminAuthController : AuthControllerBase
 {
     public AdminAuthController(AuthService auth) : base(auth) { }
     protected override AccountKind Kind => AccountKind.Admin;
+
+    [HttpGet("permissions")]
+    public async Task<IActionResult> Permissions([FromServices] IPermissionChecker checker, CancellationToken ct)
+    {
+        var id = Guid.Parse(User.IdentityOf(AccountKind.Admin)!.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+        return Envelope(await checker.CodesAsync(id, ct));
+    }
 }
 
 [Route("api/thi/auth")]
