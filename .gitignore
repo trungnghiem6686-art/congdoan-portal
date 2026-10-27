@@ -1,0 +1,6 @@
+.superpowers/
+.env
+bin/
+obj/
+node_modules/
+.next/
